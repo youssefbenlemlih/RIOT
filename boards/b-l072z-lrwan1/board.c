@@ -21,12 +21,8 @@
 #include "board.h"
 #include "periph/gpio.h"
 
-
 void board_init(void)
 {
-    /* initialize the CPU */
-    cpu_init();
-
 #if defined(MODULE_SX1276)
     /* Enable TCXO */
     gpio_init(RADIO_TCXO_VCC_PIN, GPIO_OUT);

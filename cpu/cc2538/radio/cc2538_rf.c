@@ -23,7 +23,6 @@
 #include "periph_conf.h"
 
 #include "cc2538_rf.h"
-#include "cc2538_rf_netdev.h"
 
 #define ENABLE_DEBUG    0
 #include "debug.h"
@@ -85,7 +84,6 @@ static void _cc2538_observable_signals(void)
     }
 }
 
-
 bool cc2538_channel_clear(void)
 {
     if (RFCORE->XREG_FSMSTAT0bits.FSM_FFCTRL_STATE == FSM_STATE_IDLE) {
@@ -136,8 +134,7 @@ void cc2538_init(void)
     RFCORE_XREG_FIFOPCTRL = CC2538_RF_MAX_DATA_LEN;
 
     /* Set default IRQ */
-    RFCORE_XREG_RFIRQM1 = TXDONE | CSP_STOP | TXACKDONE;
-    RFCORE_XREG_RFIRQM0 = RXPKTDONE | FIFOP | SFD;
+    cc2538_rf_enable_irq();
 
     /* Enable all RF CORE error interrupts */
     RFCORE_XREG_RFERRM = STROBE_ERR | TXUNDERF | TXOVERF | \
@@ -212,10 +209,5 @@ bool cc2538_on(void)
 void cc2538_setup(cc2538_rf_t *dev)
 {
     (void) dev;
-#if IS_USED(MODULE_NETDEV_IEEE802154_SUBMAC)
-    extern ieee802154_dev_t cc2538_rf_dev;
-    netdev_register(&dev->netdev.dev.netdev, NETDEV_CC2538, 0);
-    netdev_ieee802154_submac_init(&dev->netdev, &cc2538_rf_dev);
-#endif
     cc2538_init();
 }

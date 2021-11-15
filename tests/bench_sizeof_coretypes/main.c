@@ -38,7 +38,6 @@
 #endif
 #include "thread.h"
 
-
 #define P(NAME) printf("    tcb->%-11s            %3u     %3u\n", #NAME, \
                        (unsigned)sizeof(((thread_t *) 0)->NAME), \
                        (unsigned)offsetof(thread_t, NAME))
@@ -102,7 +101,7 @@ int main(void)
     P(msg_queue);
     P(msg_array);
 #endif
-#if defined(DEVELHELP) || defined(SCHED_TEST_STACK) || defined(MODULE_MPU_STACK_GUARD)
+#if defined(DEVELHELP) || IS_ACTIVE(SCHED_TEST_STACK) || defined(MODULE_MPU_STACK_GUARD)
     P(stack_start);
 #endif
 #ifdef DEVELHELP

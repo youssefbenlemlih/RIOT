@@ -38,7 +38,9 @@ extern "C" {
  *
  * Determined with `git describe --tags` in `$ESP8266_SDK_DIR`
  */
-#define IDF_VER     "v3.1-4-g08c234e"
+#if !defined(IDF_VER) || DOXYGEN
+#include "esp8266_idf_version.h"
+#endif
 
 /**
  * @name Default console configuration
@@ -84,3 +86,4 @@ extern "C" {
 
 #endif /* DOXYGEN */
 #endif /* SDK_CONF_H */
+/** @} */

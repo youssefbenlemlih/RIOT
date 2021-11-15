@@ -43,6 +43,10 @@ void saul_init_devs(void)
         extern void auto_init_nrf_temperature(void);
         auto_init_nrf_temperature();
     }
+    if (IS_USED(MODULE_SAUL_NRF_VDDH)) {
+        extern void auto_init_nrf_vddh(void);
+        auto_init_nrf_vddh();
+    }
     if (IS_USED(MODULE_AD7746)) {
         extern void auto_init_ad7746(void);
         auto_init_ad7746();
@@ -166,6 +170,10 @@ void saul_init_devs(void)
     if (IS_USED(MODULE_LIS3MDL)) {
         extern void auto_init_lis3mdl(void);
         auto_init_lis3mdl();
+    }
+    if (IS_USED(MODULE_LM75)) {
+        extern void auto_init_lm75(void);
+        auto_init_lm75();
     }
     if (IS_USED(MODULE_LPSXXX)) {
         extern void auto_init_lpsxxx(void);

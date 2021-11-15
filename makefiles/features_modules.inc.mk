@@ -11,7 +11,15 @@ USEMODULE += $(PERIPH_FEATURES)
 
 # Add all USED periph_% init modules unless they are blacklisted
 ifneq (,$(filter periph_init, $(USEMODULE)))
-  PERIPH_MODULES := $(filter-out periph_init% periph_common,\
+  PERIPH_IGNORE_MODULES := \
+    periph_init% \
+    periph_common \
+    periph_rtc_rtt \
+    periph_clic \
+    periph_coretimer \
+    periph_plic
+    #
+  PERIPH_MODULES := $(filter-out $(PERIPH_IGNORE_MODULES),\
                                  $(filter periph_%,$(USEMODULE)))
   # Use simple expansion to avoid USEMODULE referencing itself
   PERIPH_INIT_MODULES := $(subst periph_,periph_init_,$(PERIPH_MODULES))

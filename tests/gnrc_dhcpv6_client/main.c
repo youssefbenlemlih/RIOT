@@ -37,11 +37,15 @@ void *_dhcpv6_client_thread(void *args)
     (void)args;
     /* initialize client event queue */
     event_queue_init(&event_queue);
+    /* Configure client to use DHCPv6 IA_NA */
+    netif->ipv6.aac_mode |= GNRC_NETIF_AAC_DHCP;
     /* initialize DHCPv6 client on any interface */
     dhcpv6_client_init(&event_queue, SOCK_ADDR_ANY_NETIF);
     /* configure client to request prefix delegation of /64 subnet
      * interface netif */
     dhcpv6_client_req_ia_pd(netif->pid, 64U);
+    /* set client configuration mode to stateful */
+    dhcpv6_client_set_conf_mode(DHCPV6_CLIENT_CONF_MODE_STATEFUL);
     /* start DHCPv6 client */
     dhcpv6_client_start();
     /* start event loop of DHCPv6 client */

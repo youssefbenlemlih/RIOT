@@ -64,6 +64,16 @@ extern "C" {
 #endif
 
 /**
+ * @def         index_of(ARRAY, ELEMENT)
+ * @brief       Returns the index of a pointer to an array element.
+
+ * @param[in]   ARRAY    an array
+ * @param[in]   ELEMENT  pointer to an array element
+ * @return      Index of the element in the array
+ */
+#define index_of(ARRAY, ELEMENT) (((uintptr_t)(ELEMENT) - (uintptr_t)(ARRAY)) / sizeof((ARRAY)[0]))
+
+/**
  * @def NORETURN
  * @brief The *NORETURN* keyword tells the compiler to assume that the function
  *        cannot return.
@@ -186,6 +196,65 @@ extern "C" {
  * @returns     0 if the module is not being used
  */
 #define IS_USED(module) IS_ACTIVE(module)
+
+/**
+ * @def         RIOT_VERSION_NUM(major, minor, patch, extra)
+ * @brief       Generates a 64 bit variable of a release version.
+ *              Comparisons to this only apply to released branches
+ *
+ *              To define @p extra add a file `EXTRAVERSION` to the RIOT root
+ *              with the content
+ *
+ *                  RIOT_EXTRAVERSION = <extra>
+ *
+ *              with `<extra>` being the number of your local version.
+ *              This can be useful if you are maintaining a downstream
+ *              release to base further work on.
+ *
+ * @warning     This is only intended to be used with external boards or
+ *              modules.
+ *              In-tree code must not make use of this macro.
+ *
+ * @param[in]   major   Mayor version of the release
+ * @param[in]   minor   Minor version of the release
+ * @param[in]   patch   Patch level of the release
+ * @param[in]   extra   Extra version, user defined
+ *
+ * @returns     A machine readable version variable
+ */
+#define RIOT_VERSION_NUM(major, minor, patch, extra)   \
+    (((0ULL + major) << 48) + ((0ULL + minor) << 32) + \
+     ((0ULL + patch) << 16) + (extra))
+
+/**
+ * @brief   Disable -Wpedantic for the argument, but restore diagnostic
+ *          settings afterwards
+ * @param   ...     The expression that -Wpendantic should not apply to
+ *
+ * @warning This is intended for internal use only
+ *
+ * This is particularly useful when declaring non-strictly conforming
+ * preprocessor macros, as the diagnostics need to be disabled where the
+ * macro is evaluated, not where the macro is declared.
+ */
+#define WITHOUT_PEDANTIC(...) \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Wpedantic\"") \
+    __VA_ARGS__ \
+    _Pragma("GCC diagnostic pop")
+
+/**
+ * @brief   Declare a constant named @p identifier as anonymous `enum` that has
+ *          the value @p const_expr
+ *
+ * @warning This is intended for internal use only
+ *
+ * This turns any expression that is constant and known at compile time into
+ * a formal compile time constant. This allows e.g. using non-formally but
+ * still constant expressions in `static_assert()`.
+ */
+#define DECLARE_CONSTANT(identifier, const_expr) \
+    WITHOUT_PEDANTIC(enum { identifier = const_expr };)
 
 /**
  * @cond INTERNAL

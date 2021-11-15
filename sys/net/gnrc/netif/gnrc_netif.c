@@ -32,6 +32,7 @@
 #if IS_USED(MODULE_GNRC_NETIF_PKTQ)
 #include "net/gnrc/netif/pktq.h"
 #endif /* IS_USED(MODULE_GNRC_NETIF_PKTQ) */
+#include "net/gnrc/sixlowpan/ctx.h"
 #if IS_USED(MODULE_GNRC_SIXLOWPAN_FRAG_SFR)
 #include "net/gnrc/sixlowpan/frag/sfr.h"
 #endif /* IS_USED(MODULE_GNRC_SIXLOWPAN_FRAG_SFR) */
@@ -40,7 +41,7 @@
 #include "fmt.h"
 #include "log.h"
 #include "sched.h"
-#if (CONFIG_GNRC_NETIF_MIN_WAIT_AFTER_SEND_US > 0U)
+#if IS_USED(MODULE_XTIMER) || IS_USED(MODULE_ZTIMER_XTIMER_COMPAT)
 #include "xtimer.h"
 #endif
 
@@ -1235,6 +1236,167 @@ static ipv6_addr_t *_src_addr_selection(gnrc_netif_t *netif,
         return &netif->ipv6.addrs[idx];
     }
 }
+
+int gnrc_netif_ipv6_add_prefix(gnrc_netif_t *netif,
+                               const ipv6_addr_t *pfx, uint8_t pfx_len,
+                               uint32_t valid, uint32_t pref)
+{
+    int res;
+    eui64_t iid;
+    ipv6_addr_t addr = {0};
+
+    assert(netif != NULL);
+    DEBUG("gnrc_netif: (re-)configure prefix %s/%d\n",
+          ipv6_addr_to_str(addr_str, pfx, sizeof(addr_str)), pfx_len);
+    if (gnrc_netapi_get(netif->pid, NETOPT_IPV6_IID, 0, &iid,
+                        sizeof(eui64_t)) >= 0) {
+        ipv6_addr_set_aiid(&addr, iid.uint8);
+    }
+    else {
+        LOG_WARNING("gnrc_netif: cannot get IID of netif %u\n", netif->pid);
+        return -ENODEV;
+    }
+    ipv6_addr_init_prefix(&addr, pfx, pfx_len);
+
+    /* add address as valid */
+    res = gnrc_netif_ipv6_addr_add_internal(netif, &addr, pfx_len,
+                                           GNRC_NETIF_IPV6_ADDRS_FLAGS_STATE_VALID);
+    if (res < 0) {
+        goto out;
+    }
+
+    /* update lifetime */
+    if (valid < UINT32_MAX) { /* UINT32_MAX means infinite lifetime */
+        /* the valid lifetime is given in seconds, but the NIB's timers work
+         * in microseconds, so we have to scale down to the smallest
+         * possible value (UINT32_MAX - 1). */
+        valid = (valid > (UINT32_MAX / MS_PER_SEC))
+              ? (UINT32_MAX - 1) : valid * MS_PER_SEC;
+    }
+    if (pref < UINT32_MAX) { /* UINT32_MAX means infinite lifetime */
+        /* same treatment for pref */
+        pref = (pref > (UINT32_MAX / MS_PER_SEC))
+             ? (UINT32_MAX - 1) : pref * MS_PER_SEC;
+    }
+    gnrc_ipv6_nib_pl_set(netif->pid, pfx, pfx_len, valid, pref);
+
+    /* configure 6LoWPAN specific options */
+    if (IS_USED(MODULE_GNRC_IPV6_NIB) &&
+        IS_ACTIVE(CONFIG_GNRC_IPV6_NIB_6LBR) &&
+        IS_ACTIVE(CONFIG_GNRC_IPV6_NIB_MULTIHOP_P6C) &&
+        gnrc_netif_is_6ln(netif)) {
+
+        /* configure compression context */
+        if (gnrc_sixlowpan_ctx_update_6ctx(pfx, pfx_len, valid)) {
+            DEBUG("gnrc_netif: add compression context for prefix %s/%u\n",
+                   ipv6_addr_to_str(addr_str, pfx, sizeof(addr_str)), pfx_len);
+        }
+
+        (void)gnrc_ipv6_nib_abr_add(&addr);
+    }
+
+out:
+    return res;
+}
+
+#if IS_USED(MODULE_GNRC_NETIF_BUS)
+static bool _has_global_addr(gnrc_netif_t *netif)
+{
+    bool has_global = false;
+
+    gnrc_netif_acquire(netif);
+
+    for (unsigned i = 0; i < CONFIG_GNRC_NETIF_IPV6_ADDRS_NUMOF; i++) {
+        if (ipv6_addr_is_unspecified(&netif->ipv6.addrs[i])) {
+            continue;
+        }
+        if (!ipv6_addr_is_link_local(&netif->ipv6.addrs[i])) {
+            has_global = true;
+            break;
+        }
+    }
+
+    gnrc_netif_release(netif);
+    return has_global;
+}
+
+static void _netif_bus_attach_and_subscribe_addr_valid(gnrc_netif_t *netif,
+                                                       msg_bus_entry_t *sub)
+{
+    msg_bus_t *bus = gnrc_netif_get_bus(netif, GNRC_NETIF_BUS_IPV6);
+    msg_bus_attach(bus, sub);
+    msg_bus_subscribe(sub, GNRC_IPV6_EVENT_ADDR_VALID);
+}
+
+static void _netif_bus_detach(gnrc_netif_t *netif, msg_bus_entry_t *sub)
+{
+    msg_bus_t *bus = gnrc_netif_get_bus(netif, GNRC_NETIF_BUS_IPV6);
+    msg_bus_detach(bus, sub);
+}
+
+bool gnrc_netif_ipv6_wait_for_global_address(gnrc_netif_t *netif,
+                                             uint32_t timeout_ms)
+{
+    unsigned netif_numof = gnrc_netif_numof();
+
+    /* no interfaces */
+    if (netif_numof == 0) {
+        return false;
+    }
+
+    msg_bus_entry_t subs[netif_numof];
+    bool has_global = false;
+
+    if (netif) {
+        if (_has_global_addr(netif)) {
+            return true;
+        }
+
+        _netif_bus_attach_and_subscribe_addr_valid(netif, &subs[0]);
+    } else {
+        /* subscribe to all interfaces */
+        for (unsigned count = 0;
+             (netif = gnrc_netif_iter(netif));
+             count++) {
+            if (_has_global_addr(netif)) {
+                has_global = true;
+            }
+
+            _netif_bus_attach_and_subscribe_addr_valid(netif, &subs[count]);
+        }
+    }
+
+    /* wait for global address */
+    msg_t m;
+    while (!has_global) {
+        if (xtimer_msg_receive_timeout(&m, timeout_ms * US_PER_MS) < 0) {
+            DEBUG_PUTS("gnrc_netif: timeout waiting for prefix");
+            break;
+        }
+
+        if (ipv6_addr_is_link_local(m.content.ptr)) {
+            DEBUG_PUTS("gnrc_netif: got link-local address");
+        } else {
+            DEBUG_PUTS("gnrc_netif: got global address");
+            has_global = true;
+        }
+    }
+
+    /* called with a given interface */
+    if (netif != NULL) {
+        _netif_bus_detach(netif, &subs[0]);
+    } else {
+        /* unsubscribe all */
+        for (unsigned count = 0;
+             (netif = gnrc_netif_iter(netif));
+             count++) {
+            _netif_bus_detach(netif, &subs[count]);
+        }
+    }
+
+    return has_global;
+}
+#endif  /* IS_USED(MODULE_GNRC_NETIF_BUS) */
 #endif  /* IS_USED(MODULE_GNRC_NETIF_IPV6) */
 
 static void _update_l2addr_from_dev(gnrc_netif_t *netif)

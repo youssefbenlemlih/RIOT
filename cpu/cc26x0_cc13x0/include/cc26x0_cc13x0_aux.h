@@ -5,6 +5,7 @@
  * Public License v2.1. See the file LICENSE in the top level directory for more
  * details.
  */
+
 /**
  * @ingroup         cpu_cc26x0_cc13x0_definitions
  * @{
@@ -24,9 +25,8 @@
 extern "C" {
 #endif
 
-
 /**
- * AUX_AIODIO registers
+ * @brief AUX_AIODIO registers
  */
 typedef struct {
     reg32_t GPIODOUT; /**< gpio data out */
@@ -38,9 +38,10 @@ typedef struct {
     reg32_t GPIODIE; /**< gpio data input enable */
 } aux_aiodio_regs_t;
 
-/** @ingroup cpu_specific_peripheral_memory_map
-  * @{
-  */
+/**
+ * @ingroup cpu_specific_peripheral_memory_map
+ * @{
+ */
 #define AUX_AIODIO0_BASE      0x400C1000 /**< AUX_AIODIO0 base address */
 #define AUX_AIODIO1_BASE      0x400C2000 /**< AUX_AIODIO1 base address */
 /** @} */
@@ -48,9 +49,8 @@ typedef struct {
 #define AUX_AIODIO0          ((aux_aiodio_regs_t *) (AUX_AIODIO0_BASE)) /**< AUX_AIODIO0 register bank */
 #define AUX_AIODIO1          ((aux_aiodio_regs_t *) (AUX_AIODIO1_BASE)) /**< AUX_AIODIO1 register bank */
 
-
 /**
- * AUX_TDC registers
+ * @brief AUX_TDC registers
  */
 typedef struct {
     reg32_t CTL; /**< control */
@@ -65,17 +65,17 @@ typedef struct {
     reg32_t PRECNT; /**< prescaler counter */
 } aux_tdc_regs_t;
 
-/** @ingroup cpu_specific_peripheral_memory_map
-  * @{
-  */
+/**
+ * @ingroup cpu_specific_peripheral_memory_map
+ * @{
+ */
 #define AUX_TDC_BASE      0x400C4000 /**< AUX_TDC base address */
 /** @} */
 
 #define AUX_TDC           ((aux_tdc_regs_t *) (AUX_TDC_BASE)) /**< AUX_TDC register bank */
 
-
 /**
- * AUX_EVCTL registers
+ * @brief AUX_EVCTL registers
  */
 typedef struct {
     reg32_t VECCFG0; /**< vector config 0 */
@@ -97,14 +97,14 @@ typedef struct {
     reg32_t VECFLAGSCLR; /**< vector flags clear */
 } aux_evtcl_regs_t;
 
-/** @ingroup cpu_specific_peripheral_memory_map
-  * @{
-  */
+/**
+ * @ingroup cpu_specific_peripheral_memory_map
+ * @{
+ */
 #define AUX_EVCTL_BASE      0x400C5000 /**< AUX_EVCTL base address */
 /** @} */
 
 #define AUX_EVCTL           ((aux_evctl_regs_t *) (AUX_EVCTL_BASE)) /**< AUX_EVCTL register bank */
-
 
 /**
  * AUX_WUC registers
@@ -146,17 +146,17 @@ typedef struct {
 #define MODCLKEN0_AUX_ADI4_EN       0x00000080  /* enable clock for AUX_ADI4 */
 /** @} */
 
-/** @ingroup cpu_specific_peripheral_memory_map
-  * @{
-  */
+/**
+ * @ingroup cpu_specific_peripheral_memory_map
+ * @{
+ */
 #define AUX_WUC_BASE      0x400C6000 /**< AUX_WUC base address */
 /** @} */
 
 #define AUX_WUC           ((aux_wuc_regs_t *) (AUX_WUC_BASE)) /**< AUX_WUC register bank */
 
-
 /**
- * AUX_TIMER registers
+ * @brief AUX_TIMER registers
  */
 typedef struct {
     reg32_t T0CFG; /**< timer 0 config */
@@ -167,14 +167,14 @@ typedef struct {
     reg32_t T1CTL; /**< timer 1 control */
 } aux_timer_regs_t;
 
-/** @ingroup cpu_specific_peripheral_memory_map
-  * @{
-  */
+/**
+ * @ingroup cpu_specific_peripheral_memory_map
+ * @{
+ */
 #define AUX_TIMER_BASE      0x400C7000 /**< AUX_WUC base address */
 /** @} */
 
 #define AUX_TIMER           ((aux_timer_regs_t *) (AUX_TIMER_BASE)) /**< AUX_TIMER register bank */
-
 
 /**
  * AUX_SMPH registers
@@ -191,14 +191,14 @@ typedef struct {
     reg32_t AUTOTAKE; /**< sticky request for single semaphore */
 } aux_smph_regs_t;
 
-/** @ingroup cpu_specific_peripheral_memory_map
-  * @{
-  */
+/**
+ * @ingroup cpu_specific_peripheral_memory_map
+ * @{
+ */
 #define AUX_SMPH_BASE               0x400C8000 /**< AUX_WUC base address */
-/* @} */
+/** @} */
 
 #define AUX_SMPH ((aux_smph_regs_t *) (AUX_SMPH_BASE)) /**< AUX_SMPH register bank */
-
 
 /**
  * AUX_ANAIF registers
@@ -212,14 +212,14 @@ typedef struct {
     reg32_t ISRCCTL; /**< current source control */
 } aux_anaif_regs_t;
 
-/** @ingroup cpu_specific_peripheral_memory_map
-  * @{
-  */
+/**
+ * @ingroup cpu_specific_peripheral_memory_map
+ * @{
+ */
 #define AUX_ANAIF_BASE      0x400C9000 /**< AUX_WUC base address */
 /** @} */
 
 #define AUX_ANAIF           ((aux_anaif_regs_t *) (AUX_ANAIF_BASE)) /**< AUX_ANAIF register bank */
-
 
 /**
  * ADI_4_AUX registers
@@ -238,14 +238,14 @@ typedef struct {
     reg8_t ADCREF1; /**< ADC reference 1 */
 } adi_4_aux_regs_t;
 
-/** @ingroup cpu_specific_peripheral_memory_map
-  * @{
-  */
+/**
+ * @ingroup cpu_specific_peripheral_memory_map
+ * @{
+ */
 #define ADI_4_AUX_BASE      0x400CB000 /**< AUX_WUC base address */
 /** @} */
 
 #define ADI_4_AUX           ((adi_4_aux_regs_t *) (ADI_4_AUX_BASE)) /**< ADI_4_AUX register bank */
-
 
 #define ADDI_SEM AUX_SMPH->SMPH0 /**< the semamphore used for ADDI */
 
@@ -254,4 +254,4 @@ typedef struct {
 #endif
 
 #endif /* CC26X0_CC13X0_AUX_H */
-/** @}*/
+/** @} */

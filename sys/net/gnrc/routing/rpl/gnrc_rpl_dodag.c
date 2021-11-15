@@ -29,6 +29,7 @@
 #include "utlist.h"
 
 #include "net/gnrc/rpl.h"
+#include "net/gnrc/rpl/rpble.h"
 #ifdef MODULE_GNRC_RPL_P2P
 #include "net/gnrc/rpl/p2p.h"
 #include "net/gnrc/rpl/p2p_dodag.h"
@@ -144,7 +145,8 @@ gnrc_rpl_instance_t *gnrc_rpl_instance_get(uint8_t instance_id)
     return NULL;
 }
 
-bool gnrc_rpl_dodag_init(gnrc_rpl_instance_t *instance, ipv6_addr_t *dodag_id, kernel_pid_t iface)
+bool gnrc_rpl_dodag_init(gnrc_rpl_instance_t *instance, const ipv6_addr_t *dodag_id,
+                         kernel_pid_t iface)
 {
     assert(instance && (instance->state > 0));
 
@@ -358,6 +360,7 @@ static gnrc_rpl_parent_t *_gnrc_rpl_find_preferred_parent(gnrc_rpl_dodag_t *doda
     dodag->my_rank = dodag->instance->of->calc_rank(dodag, 0);
     if (dodag->my_rank != old_rank) {
         trickle_reset_timer(&dodag->trickle);
+        gnrc_rpl_rpble_update(dodag);
     }
 
     LL_FOREACH_SAFE(dodag->parents, elt, tmp) {
@@ -370,7 +373,7 @@ static gnrc_rpl_parent_t *_gnrc_rpl_find_preferred_parent(gnrc_rpl_dodag_t *doda
     return dodag->parents;
 }
 
-gnrc_rpl_instance_t *gnrc_rpl_root_instance_init(uint8_t instance_id, ipv6_addr_t *dodag_id,
+gnrc_rpl_instance_t *gnrc_rpl_root_instance_init(uint8_t instance_id, const ipv6_addr_t *dodag_id,
                                                  uint8_t mop)
 {
     if (gnrc_rpl_pid == KERNEL_PID_UNDEF) {

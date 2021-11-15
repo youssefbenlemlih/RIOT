@@ -21,6 +21,7 @@ export CXXINCLUDES           # The extra include paths for c++, set by the vario
 export NATIVEINCLUDES        # The native include paths, set by the various native Makefile.include files.
 
 export USEMODULE             # Sys Module dependencies of the application. Set in the application's Makefile.
+export BIN_USEMODULE         # Modules specific to bindist (see bindist.ink.mk). Set in the application's Makefile.
 export USEPKG                # Pkg dependencies (third party modules) of the application. Set in the application's Makefile.
 export DISABLE_MODULE        # Used in the application's Makefile to suppress DEFAULT_MODULEs.
 # APPDEPS                    # Files / Makefile targets that need to be created before the application can be build. Set in the application's Makefile.
@@ -103,6 +104,7 @@ export HEXFILE               # The 'intel hex' stripped result of the compilatio
 # DEBUGGER_FLAGS             # The parameters to supply to DEBUGGER.
 # DEBUGSERVER                # The command to call on "make debug-server", usually a script starting the GDB server.
 # DEBUGSERVER_FLAGS          # The parameters to supply to DEBUGSERVER.
+# DEVELHELP                  # Set to 1 to spend ROM, RAM and CPU time for help during development (e.g. enable asserts())
 # RESET                      # The command to call on "make reset", this command resets/reboots the target.
 # RESET_FLAGS                # The parameters to supply to RESET.
 # PROGRAMMER                 # The programmer to use when flashing, resetting or debugging
@@ -124,3 +126,4 @@ export AFL_FLAGS             # Additional command-line flags passed to afl durin
 
 # LOG_LEVEL                  # Logging level as integer (NONE: 0, ERROR: 1, WARNING: 2, INFO: 3, DEBUG: 4, default: 3)
 # KCONFIG_ADD_CONFIG         # List of .config files to be merged used by Boards and CPUs. See kconfig.mk
+# VERBOSE_ASSERT             # Set to 1 to print the file and line of a failed assert when assertions blow

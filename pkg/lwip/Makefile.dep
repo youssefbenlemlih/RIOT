@@ -27,7 +27,12 @@ ifneq (,$(filter lwip_ipv6_autoconfig lwip_ipv6_mld,$(USEMODULE)))
   USEMODULE += lwip_ipv6
 endif
 
+ifneq (,$(filter lwip_ipv4,$(USEMODULE)))
+  USEMODULE += ipv4
+endif
+
 ifneq (,$(filter lwip_ipv6,$(USEMODULE)))
+  USEMODULE += ipv6
   USEMODULE += random
 endif
 
@@ -63,6 +68,7 @@ ifneq (,$(filter lwip_%,$(USEMODULE)))
   USEMODULE += lwip_contrib
   USEMODULE += lwip_core
   USEMODULE += lwip_netif
+  USEMODULE += lwip_netif_init_devs
   USEMODULE += netdev
   ifeq (,$(filter lwip_ipv4 lwip_ipv6,$(USEMODULE)))
     USEMODULE += lwip_ipv4
@@ -84,6 +90,14 @@ ifneq (,$(filter lwip_contrib,$(USEMODULE)))
   USEMODULE += xtimer
 endif
 
+ifneq (,$(filter lwip_netif,$(USEMODULE)))
+  USEMODULE += netif
+endif
+
 ifneq (,$(filter lwip_dhcp_auto,$(USEMODULE)))
   USEMODULE += lwip_dhcp
+endif
+
+ifneq (,$(filter netif,$(USEMODULE)))
+  USEMODULE += fmt
 endif

@@ -142,7 +142,7 @@ int nimble_netif_conn_start_adv(void)
     mutex_lock(&_lock);
     handle = _find_by_state(NIMBLE_NETIF_ADV);
     if (handle != NIMBLE_NETIF_CONN_INVALID) {
-        handle = NIMBLE_NETIF_BUSY;
+        handle = -EALREADY;
     }
     else {
         handle = _find_by_state(NIMBLE_NETIF_UNUSED);
@@ -150,7 +150,7 @@ int nimble_netif_conn_start_adv(void)
             _conn[handle].state = NIMBLE_NETIF_ADV;
         }
         else {
-            handle = NIMBLE_NETIF_NOMEM;
+            handle = -ENOMEM;
         }
 
     }
@@ -224,7 +224,7 @@ unsigned nimble_netif_conn_count(uint16_t filter)
 
 uint16_t nimble_netif_conn_get_itvl_ms(int handle)
 {
-    if ((handle == 0) || (handle >= CONN_CNT)) {
+    if ((handle < 0) || (handle >= CONN_CNT)) {
         return 0;
     }
 

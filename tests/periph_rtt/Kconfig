@@ -9,4 +9,5 @@ config APPLICATION
     bool
     default y
     imply MODULE_PERIPH_RTT_SET_COUNTER
+    imply MODULE_PERIPH_RTC_MEM
     depends on TEST_KCONFIG

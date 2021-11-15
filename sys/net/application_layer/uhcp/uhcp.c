@@ -17,7 +17,7 @@ void uhcp_handle_udp(uint8_t *buf, size_t len, uint8_t *src, uint16_t port, uhcp
 {
     char addr_str[INET6_ADDRSTRLEN];
     inet_ntop(AF_INET6, src, addr_str, INET6_ADDRSTRLEN);
-    LOG_INFO("got packet from %s port %u\n", addr_str, (unsigned)port);
+    LOG_DEBUG("got packet from %s port %u\n", addr_str, (unsigned)port);
 
     if (len < sizeof(uhcp_req_t)) {
         LOG_ERROR("error: packet too small.\n");
@@ -40,7 +40,7 @@ void uhcp_handle_udp(uint8_t *buf, size_t len, uint8_t *src, uint16_t port, uhcp
     }
 
     switch(type) {
-#ifdef UHCP_SERVER
+#ifdef MODULE_UHCPD
         case UHCP_REQ:
             if (len < sizeof(uhcp_req_t)) {
                 LOG_ERROR("error: request too small\n");
@@ -50,7 +50,7 @@ void uhcp_handle_udp(uint8_t *buf, size_t len, uint8_t *src, uint16_t port, uhcp
             }
             break;
 #endif
-#ifdef UHCP_CLIENT
+#ifdef MODULE_UHCPC
         case UHCP_PUSH:
             {
                 uhcp_push_t *push = (uhcp_push_t*)hdr;
@@ -70,7 +70,7 @@ void uhcp_handle_udp(uint8_t *buf, size_t len, uint8_t *src, uint16_t port, uhcp
     }
 }
 
-#ifdef UHCP_SERVER
+#ifdef MODULE_UHCPD
 extern char _prefix[16];
 extern unsigned _prefix_len;
 void uhcp_handle_req(uhcp_req_t *req, uint8_t *src, uint16_t port, uhcp_iface_t iface)
@@ -89,9 +89,9 @@ void uhcp_handle_req(uhcp_req_t *req, uint8_t *src, uint16_t port, uhcp_iface_t 
         LOG_ERROR("uhcp_handle_req(): udp_sendto() res=%i\n", res);
     }
 }
-#endif /* UHCP_SERVER */
+#endif /* MODULE_UHCPD */
 
-#ifdef UHCP_CLIENT
+#ifdef MODULE_UHCPC
 void uhcp_handle_push(uhcp_push_t *req, uint8_t *src, uint16_t port, uhcp_iface_t iface)
 {
     char addr_str[INET6_ADDRSTRLEN];
@@ -108,7 +108,7 @@ void uhcp_handle_push(uhcp_push_t *req, uint8_t *src, uint16_t port, uhcp_iface_
 
     inet_ntop(AF_INET6, prefix, prefix_str, INET6_ADDRSTRLEN);
 
-    LOG_INFO("uhcp: push from %s:%u prefix=%s/%u\n", addr_str, (unsigned)port,
+    LOG_DEBUG("uhcp: push from %s:%u prefix=%s/%u\n", addr_str, (unsigned)port,
              prefix_str, req->prefix_len);
     uhcp_handle_prefix(prefix, req->prefix_len, 0xFFFF, src, iface);
 }

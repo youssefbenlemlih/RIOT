@@ -258,7 +258,6 @@ extern const coap_resource_t coap_resources[];
  */
 extern const unsigned coap_resources_numof;
 
-
 /**
  * @name    Functions -- Header Read/Write
  *
@@ -429,7 +428,6 @@ static inline void coap_hdr_set_type(coap_hdr_t *hdr, unsigned type)
     hdr->ver_t_tkl |= type << 4;
 }
 /**@}*/
-
 
 /**
  * @name    Functions -- Options Read
@@ -664,8 +662,11 @@ void coap_block_object_init(coap_block1_t *block, size_t blknum, size_t blksize,
  *
  * @param[in]     slicer      Preallocated slicer struct to use
  * @param[in]     option      option number (block1 or block2)
+ *
+ * @return      true if the `more` bit is set in the block option
+ * @return      false if the `more` bit is not set the block option
  */
-void coap_block_finish(coap_block_slicer_t *slicer, uint16_t option);
+bool coap_block_finish(coap_block_slicer_t *slicer, uint16_t option);
 
 /**
  * @brief Finish a block1 request
@@ -677,10 +678,13 @@ void coap_block_finish(coap_block_slicer_t *slicer, uint16_t option);
  * function overwrites bytes in the packet rather than adding new.
  *
  * @param[in]     slicer      Preallocated slicer struct to use
+ *
+ * @return      true if the `more` bit is set in the block option
+ * @return      false if the `more` bit is not set the block option
  */
-static inline void coap_block1_finish(coap_block_slicer_t *slicer)
+static inline bool coap_block1_finish(coap_block_slicer_t *slicer)
 {
-    coap_block_finish(slicer, COAP_OPT_BLOCK1);
+    return coap_block_finish(slicer, COAP_OPT_BLOCK1);
 }
 
 /**
@@ -693,10 +697,13 @@ static inline void coap_block1_finish(coap_block_slicer_t *slicer)
  * function overwrites bytes in the packet rather than adding new.
  *
  * @param[in]     slicer      Preallocated slicer struct to use
+ *
+ * @return      true if the `more` bit is set in the block option
+ * @return      false if the `more` bit is not set the block option
  */
-static inline void coap_block2_finish(coap_block_slicer_t *slicer)
+static inline bool coap_block2_finish(coap_block_slicer_t *slicer)
 {
-    coap_block_finish(slicer, COAP_OPT_BLOCK2);
+    return coap_block_finish(slicer, COAP_OPT_BLOCK2);
 }
 
 /**
@@ -836,7 +843,6 @@ static inline unsigned coap_szx2size(unsigned szx)
     return (1 << (szx + 4));
 }
 /**@}*/
-
 
 /**
  * @name    Functions -- Options Write Packet API
@@ -1131,7 +1137,7 @@ static inline ssize_t coap_opt_add_string(coap_pkt_t *pkt, uint16_t optnum,
  * @note Use this only for null-terminated strings.
  *
  * @param[in,out] pkt         Packet being built
- * @param[in]     path        Resource (sub)path
+ * @param[in]     path        `\0`-terminated resource (sub)path
  *
  * @pre     ((pkt != NULL) && (path != NULL))
  *
@@ -1142,6 +1148,28 @@ static inline ssize_t coap_opt_add_string(coap_pkt_t *pkt, uint16_t optnum,
 static inline ssize_t coap_opt_add_uri_path(coap_pkt_t *pkt, const char *path)
 {
     return coap_opt_add_string(pkt, COAP_OPT_URI_PATH, path, '/');
+}
+
+/**
+ * @brief   Adds one or multiple Uri-Path options in the form '/path' into pkt
+ *
+ * @note Use this only for null-terminated strings.
+ *
+ * @param[in,out] pkt         Packet being built
+ * @param[in]     path        Resource (sub)path
+ * @param[in]     path_len    Length of @p path
+ *
+ * @pre     ((pkt != NULL) && (path != NULL))
+ *
+ * @return        number of bytes written to pkt buffer
+ * @return        <0 on error
+ * @return        -ENOSPC if no available options or pkt full
+ */
+static inline ssize_t coap_opt_add_uri_path_buffer(coap_pkt_t *pkt,
+                                                   const char *path,
+                                                   size_t path_len)
+{
+    return coap_opt_add_chars(pkt, COAP_OPT_URI_PATH, path, path_len, '/');
 }
 
 /**
@@ -1158,7 +1186,6 @@ static inline ssize_t coap_opt_add_uri_path(coap_pkt_t *pkt, const char *path)
  */
 ssize_t coap_opt_finish(coap_pkt_t *pkt, uint16_t flags);
 /**@}*/
-
 
 /**
  * @name    Functions -- Options Write Buffer API
@@ -1417,7 +1444,6 @@ static inline size_t coap_opt_put_proxy_uri(uint8_t *buf, uint16_t lastonum,
     return coap_opt_put_string(buf, lastonum, COAP_OPT_PROXY_URI, uri, '\0');
 }
 
-
 /**
  * @brief   Insert block1 option into buffer (from coap_block1_t)
  *
@@ -1490,7 +1516,6 @@ static inline size_t coap_put_option_ct(uint8_t *buf, uint16_t lastonum,
     return coap_opt_put_uint(buf, lastonum, COAP_OPT_CONTENT_FORMAT, content_type);
 }
 /**@}*/
-
 
 /**
  * @name    Functions -- Messaging
@@ -1731,7 +1756,6 @@ extern ssize_t coap_well_known_core_default_handler(coap_pkt_t *pkt, \
                                                     uint8_t *buf, size_t len,
                                                     void *context);
 /**@}*/
-
 
 /**
  * @brief   Checks if a CoAP resource path matches a given URI

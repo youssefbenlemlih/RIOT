@@ -125,7 +125,6 @@ static void _close(gnrc_tcp_tcb_t *tcb)
     TCP_DEBUG_LEAVE;
 }
 
-
 static void _abort(gnrc_tcp_tcb_t *tcb)
 {
     TCP_DEBUG_ENTER;
@@ -539,7 +538,7 @@ int gnrc_tcp_listen(gnrc_tcp_tcb_queue_t *queue, gnrc_tcp_tcb_t *tcbs, size_t tc
 }
 
 int gnrc_tcp_accept(gnrc_tcp_tcb_queue_t *queue, gnrc_tcp_tcb_t **tcb,
-                    uint32_t user_timeout_duration_ms)
+                    const uint32_t user_timeout_duration_ms)
 {
     TCP_DEBUG_ENTER;
     assert(queue != NULL);
@@ -612,8 +611,10 @@ int gnrc_tcp_accept(gnrc_tcp_tcb_queue_t *queue, gnrc_tcp_tcb_t **tcb,
     }
 
     /* Setup User specified Timeout */
-    _sched_mbox(&event_user_timeout, user_timeout_duration_ms,
-                MSG_TYPE_USER_SPEC_TIMEOUT, &mbox);
+    if (user_timeout_duration_ms != GNRC_TCP_NO_TIMEOUT) {
+        _sched_mbox(&event_user_timeout, user_timeout_duration_ms,
+                    MSG_TYPE_USER_SPEC_TIMEOUT, &mbox);
+    }
 
     /* Wait until a connection was established */
     while (ret >= 0 && *tcb == NULL) {
@@ -686,13 +687,20 @@ ssize_t gnrc_tcp_send(gnrc_tcp_tcb_t *tcb, const void *data, const size_t len,
         return -ENOTCONN;
     }
 
+    /* Early return for zero length payloads to send */
+    if (!len) {
+        mutex_unlock(&(tcb->function_lock));
+        TCP_DEBUG_LEAVE;
+        return 0;
+    }
+
     /* Setup messaging */
     _gnrc_tcp_fsm_set_mbox(tcb, &mbox);
 
     /* Setup connection timeout */
     _sched_connection_timeout(&tcb->event_misc, &mbox);
 
-    if (timeout_duration_ms > 0) {
+    if ((0 < timeout_duration_ms) && (timeout_duration_ms != GNRC_TCP_NO_TIMEOUT)) {
         _sched_mbox(&event_user_timeout, timeout_duration_ms,
                     MSG_TYPE_USER_SPEC_TIMEOUT, &mbox);
     }
@@ -814,6 +822,13 @@ ssize_t gnrc_tcp_recv(gnrc_tcp_tcb_t *tcb, void *data, const size_t max_len,
         return -ENOTCONN;
     }
 
+    /* Early return for zero length buffers to store received data */
+    if (!max_len) {
+        mutex_unlock(&(tcb->function_lock));
+        TCP_DEBUG_LEAVE;
+        return 0;
+    }
+
     /* If FIN was received (CLOSE_WAIT), no further data can be received. */
     /* Copy received data into given buffer and return number of bytes. Can be zero. */
     if (state == FSM_STATE_CLOSE_WAIT) {
@@ -841,7 +856,7 @@ ssize_t gnrc_tcp_recv(gnrc_tcp_tcb_t *tcb, void *data, const size_t max_len,
     /* Setup connection timeout */
     _sched_connection_timeout(&tcb->event_misc, &mbox);
 
-    if (timeout_duration_ms > 0) {
+    if (timeout_duration_ms != GNRC_TCP_NO_TIMEOUT) {
         _sched_mbox(&event_user_timeout, timeout_duration_ms,
                     MSG_TYPE_USER_SPEC_TIMEOUT, &mbox);
     }

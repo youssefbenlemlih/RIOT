@@ -114,7 +114,6 @@ int nimble_netif_conn_get_by_addr(const uint8_t *addr);
  */
 int nimble_netif_conn_get_by_gaphandle(uint16_t gaphandle);
 
-
 /**
  * @brief   Iterate over all connection contexts that match the filter condition
  *
@@ -168,7 +167,8 @@ int nimble_netif_conn_start_connection(const uint8_t *addr);
  *          connection
  *
  * @return  handle of the reserved context
- * @return  NIMBLE_NETIF_CONN_INVALID if no unused context was available
+ * @return  -EALREADY if already advertising
+ * @return  -ENOMEM if no memory slot is available
  */
 int nimble_netif_conn_start_adv(void);
 

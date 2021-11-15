@@ -5,7 +5,10 @@
  * General Public License v2.1. See the file LICENSE in the top level
  * directory for more details.
  */
-    .section .init
+#include "vendor/riscv_csr.h"
+
+.section .init
+
     .globl _start
     .type _start,@function
 
@@ -14,6 +17,12 @@ _start:
     .cfi_undefined ra
 .option push
 .option norelax
+    csrc CSR_MSTATUS, MSTATUS_MIE
+    lui a0, %hi(_start_real)
+    addi a0, a0, %lo(_start_real)
+    jr a0
+
+_start_real:
     la gp, __global_pointer$
 .option pop
     la sp, _sp
@@ -46,7 +55,8 @@ _start:
     call __libc_init_array
 
 
-    /* Initialize board and start kernel */
+    /* Initialize CPU, board and start kernel */
+    call cpu_init
     call board_init
     call kernel_init
 

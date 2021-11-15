@@ -14,7 +14,7 @@ RIOTBASE ?= $(CURDIR)/../..
 # NOTE: 6LoWPAN will be included if IEEE802.15.4 devices are present
 
 # uncomment this to compile in support for a possibly available radio
-#USEMODULE += gnrc_netdev_default
+#USEMODULE += netdev_default
 
 USEMODULE += auto_init_gnrc_netif
 # Specify the mandatory networking modules for IPv6 and UDP
@@ -39,7 +39,6 @@ QUIET ?= 1
 # SUIT update specific stuff
 #
 
-USEMODULE += nanocoap_sock sock_util
 USEMODULE += suit suit_transport_coap
 
 # Display a progress bar during firmware download

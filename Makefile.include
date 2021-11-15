@@ -57,7 +57,7 @@ BINDIR                          ?= $(BINDIRBASE)/$(BOARD)
 PKGDIRBASE                      ?= $(RIOTBASE)/build/pkg
 DLCACHE                         ?= $(RIOTTOOLS)/dlcache/dlcache.sh
 DLCACHE_DIR                     ?= $(RIOTBASE)/.dlcache
-WARNING_EXTERNAL_MODULE_DIRS    ?= 1
+RIOT_VERSION_DUMMY_CODE         ?= RIOT_VERSION_NUM\(2042,5,23,0\)
 
 # include CI info such as BOARD_INSUFFICIENT_MEMORY, if existing
 -include Makefile.ci
@@ -113,14 +113,6 @@ ifneq ($(RIOT_CI_BUILD),1)
     ifneq (,$(BOARDSDIR))
       $(warning Using BOARDSDIR is deprecated use EXTERNAL_BOARD_DIRS instead)
       $(info EXTERNAL_BOARD_DIRS can contain multiple folders separated by space)
-    endif
-
-    # API change warning for EXTERNAL_MODULE_DIRS, remove by 2021.10
-    ifneq (,$(EXTERNAL_MODULE_DIRS))
-      ifeq (1,$(WARNING_EXTERNAL_MODULE_DIRS))
-        $(info Warning! EXTERNAL_MODULE_DIRS is a search folder since 2021.07-branch, see \
-               https://doc.riot-os.org/creating-modules.html#modules-outside-of-riotbase)
-      endif
     endif
   endif
 endif
@@ -284,6 +276,16 @@ else
   Q=
 endif
 
+# Set this to 1 to enable pretty-printing the assert location in addition
+# to the address of the failing assert.
+# This saves you to resolve the address manually with addr2line at the cost
+# of greater ROM consumption.
+VERBOSE_ASSERT ?= 0
+ifeq ($(VERBOSE_ASSERT),1)
+  CFLAGS += -DDEBUG_ASSERT_VERBOSE
+  DEVELHELP := 1
+endif
+
 # Set this to 1 to enable code in RIOT that does safety checking
 # which is not needed in a production environment but helps in the
 # development process:
@@ -327,35 +329,35 @@ APPLICATION := $(strip $(APPLICATION))
 
 ifeq (,$(and $(DOWNLOAD_TO_STDOUT),$(DOWNLOAD_TO_FILE)))
   ifeq (,$(WGET))
-    ifeq (0,$(shell which wget 2>&1 > /dev/null ; echo $$?))
-      WGET := $(shell which wget)
+    ifeq (0,$(shell which wget > /dev/null 2>&1 ; echo $$?))
+      WGET = $(call memoized,WGET,$(shell which wget))
     endif
   endif
   ifeq (,$(CURL))
-    ifeq (0,$(shell which curl 2>&1 > /dev/null ; echo $$?))
-      CURL := $(shell which curl)
+    ifeq (0,$(shell which curl > /dev/null 2>&1 ; echo $$?))
+      CURL = $(call memoized,CURL,$(shell which curl))
     endif
   endif
   ifeq (,$(WGET)$(CURL))
-    $(error Neither wget nor curl is installed!)
+    $(warning Neither wget nor curl is installed!)
   endif
 
   ifeq (,$(DOWNLOAD_TO_STDOUT))
-    DOWNLOAD_TO_STDOUT := $(if $(CURL),$(CURL) -s,$(WGET) -q -O-)
+    DOWNLOAD_TO_STDOUT ?= $(if $(CURL),$(CURL) -s,$(WGET) -q -O-)
   endif
   ifeq (,$(DOWNLOAD_TO_FILE))
-    DOWNLOAD_TO_FILE := $(if $(WGET),$(WGET) -nv -c -O,$(CURL) -s -o)
+    DOWNLOAD_TO_FILE ?= $(if $(WGET),$(WGET) -nv -c -O,$(CURL) -s -o)
   endif
 endif
 
 ifeq (,$(UNZIP_HERE))
-  ifeq (0,$(shell which unzip 2>&1 > /dev/null ; echo $$?))
-    UNZIP_HERE := $(shell which unzip) -q
+  ifeq (0,$(shell which unzip > /dev/null 2>&1 ; echo $$?))
+    UNZIP_HERE = $(call memoized,UNZIP_HERE,$(shell which unzip) -q)
   else
-    ifeq (0,$(shell which 7z 2>&1 > /dev/null ; echo $$?))
-      UNZIP_HERE := $(shell which 7z) x -bd
+    ifeq (0,$(shell which 7z > /dev/null 2>&1 ; echo $$?))
+      UNZIP_HERE = $(call memoized,UNZIP_HERE,$(shell which 7z) x -bd)
     else
-      $(error Neither unzip nor 7z is installed.)
+      $(warning Neither unzip nor 7z is installed.)
     endif
   endif
 endif
@@ -476,6 +478,8 @@ endif
 # set some settings useful for continuous integration builds
 ifeq ($(RIOT_CI_BUILD),1)
     RIOT_VERSION ?= buildtest
+    # set a dummy version number
+    RIOT_VERSION_CODE ?= $(RIOT_VERSION_DUMMY_CODE)
     ifneq ($(filter $(BOARD_INSUFFICIENT_MEMORY), $(BOARD)),)
         $(info CI-build: skipping link step)
         RIOTNOLINK:=1
@@ -504,15 +508,22 @@ include $(RIOTMAKE)/cflags.inc.mk
 
 # Include VERSION for releases
 -include $(RIOTBASE)/VERSION
+-include $(RIOTBASE)/EXTRAVERSION
 
 include $(RIOTMAKE)/git_version.inc.mk
 RIOT_VERSION ?= $(or $(GIT_VERSION),'UNKNOWN (builddir: $(RIOTBASE))')
+RIOT_EXTRAVERSION ?= 0
 
 # Deprecate using RIOT_VERSION_OVERRIDE but currently keep the behavior
 ifneq (,$(RIOT_VERSION_OVERRIDE))
   $(warning 'RIOT_VERSION_OVERRIDE' is deprecated, it can now be set with 'RIOT_VERSION' directly.)
   RIOT_VERSION = $(RIOT_VERSION_OVERRIDE)
 endif
+
+# Generate machine readable RIOT VERSION macro
+RIOT_VERSION_CODE ?= $(shell echo $(RIOT_VERSION) | \
+                      sed -E 's/([0-9]+)\.([0-9]+)\.?([0-9]+)?.*/RIOT_VERSION_NUM\\\(\1,\2,0\3,$(RIOT_EXTRAVERSION)\\\)/' | \
+                      grep RIOT_VERSION_NUM || echo "$(RIOT_VERSION_DUMMY_CODE)")
 
 # Set module by prepending APPLICATION name with 'application_'.
 # It prevents conflict with application and modules with the same name.
@@ -714,7 +725,7 @@ endef
 # This is not the case on MacOSX, so it must be built on the fly
 ifeq ($(OS),Darwin)
   ifneq (,$(filter debug, $(MAKECMDGOALS)))
-    ifneq (0,$(shell command -v setsid 2>&1 > /dev/null ; echo $$?))
+    ifneq (0,$(shell command -v setsid > /dev/null 2>&1 ; echo $$?))
       SETSID = $(RIOTTOOLS)/setsid/setsid
       $(call target-export-variables,debug,$(SETSID))
       DEBUGDEPS += $(SETSID)
@@ -844,6 +855,8 @@ objdump:
 	$(call check_cmd,$(OBJDUMP),Objdump program)
 	$(OBJDUMP) $(OBJDUMPFLAGS) $(ELFFILE) | less
 
+# inlcude clang-tidy
+include $(RIOTMAKE)/clang_tidy.inc.mk
 # Support Eclipse IDE.
 include $(RIOTMAKE)/eclipse.inc.mk
 
@@ -978,6 +991,7 @@ $(RIOTBUILD_CONFIG_HEADER_C).in: FORCE | $(CLEAN)
 
 CFLAGS_WITH_MACROS += $(CFLAGS)
 CFLAGS_WITH_MACROS += -DRIOT_VERSION=\"$(RIOT_VERSION)\"
+CFLAGS_WITH_MACROS += -DRIOT_VERSION_CODE=$(RIOT_VERSION_CODE)
 # MODULE_NAME defines. Declared in 'makefiles/modules.inc.mk'
 CFLAGS_WITH_MACROS += $(EXTDEFINES)
 

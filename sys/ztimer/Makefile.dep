@@ -108,3 +108,14 @@ ifneq (,$(filter ztimer_msec,$(USEMODULE)))
     USEMODULE += ztimer_periph_timer
   endif
 endif
+
+ifneq (,$(filter ztimer_sec,$(USEMODULE)))
+  USEMODULE += ztimer
+  FEATURES_OPTIONAL += periph_rtt
+  # HACK: see above
+  ifneq (,$(filter periph_rtt,$(FEATURES_USED)))
+    USEMODULE += ztimer_periph_rtt
+  else
+    USEMODULE += ztimer_periph_timer
+  endif
+endif

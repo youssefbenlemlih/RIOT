@@ -42,9 +42,6 @@ void board_antenna_config(uint8_t antenna)
 
 void board_init(void)
 {
-    /* initialize the CPU */
-    cpu_init();
-
     /* initialize the boards LEDs */
     led_init();
 
@@ -54,7 +51,6 @@ void board_init(void)
     /* set default antenna switch configuration */
     board_antenna_config(RFCTL_ANTENNA_DEFAULT);
 }
-
 
 /**
  * @brief Initialize the boards on-board LED

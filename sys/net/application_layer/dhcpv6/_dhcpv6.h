@@ -67,6 +67,14 @@ extern "C" {
 
 #define DHCPV6_REB_TIMEOUT          (10U)   /**< REB_TIMEOUT (in sec) */
 #define DHCPV6_REB_MAX_RT           (600U)  /**< REB_MAX_RT (in sec) */
+
+#define DHCPV6_INF_MAX_DELAY        (1U)    /**< INF_MAX_DELAY (in sec) */
+#define DHCPV6_INF_TIMEOUT          (1U)    /**< INF_TIMEOUT (in sec) */
+#define DHCPV6_INF_MAX_RT           (3600U) /**< INF_MAX_RT (in sec) */
+
+#define DHCPV6_IRT_DEFAULT          (86400U) /**< IRT_DEFAULT (in sec) */
+#define DHCPV6_IRT_MINIMUM          (600U)   /**< IRT_MINIMUM (in sec) */
+
 /** @} */
 
 #define DHCPV6_DUID_MAX_LEN         (128U)  /**< maximum length of DUID */
@@ -84,6 +92,26 @@ typedef struct __attribute__((packed)) {
     uint8_t type;   /**< message type (see [DHCPv6 messeg types ](@ref net_dhcp6_msg_types)) */
     uint8_t tid[3]; /**< transaction ID */
 } dhcpv6_msg_t;
+
+/**
+ * @brief   Relay Agents/Server message format
+ * @see [RFC 8415, section 9]
+ *      (https://tools.ietf.org/html/rfc8415#section-9)
+ */
+typedef struct __attribute__((packed)) {
+    uint8_t type;       /**< message type (see [DHCPv6 messeg types ](@ref net_dhcp6_msg_types)) */
+    uint8_t hop_count;  /**< number of relays that have already relayed the message */
+    /**
+     * @brief   optional address to identify the link on which the client is
+     *          located.
+     */
+    ipv6_addr_t link_address;
+    /**
+     * @brief   The address of the client or relay agent from which the message
+     *          to be relayed was received.
+     */
+    ipv6_addr_t peer_address;
+} dhcpv6_relay_msg_t;
 /** @} */
 
 /**
@@ -124,6 +152,35 @@ typedef struct __attribute__((packed)) {
 } dhcpv6_opt_duid_t;
 
 /**
+ * @brief   DHCPv6 identity association for non-temporary addresses (IA_NA) option
+ *          format
+ * @see [RFC 8415, section 21.4]
+ *      (https://tools.ietf.org/html/rfc8415#section-21.4)
+ */
+typedef struct __attribute__((packed)) {
+    network_uint16_t type;          /**< @ref DHCPV6_OPT_IA_NA */
+    network_uint16_t len;           /**< 12 + length of dhcpv6_opt_ia_na_t::opts in byte */
+    network_uint32_t ia_id;         /**< Unique ID for this IA_NA */
+    network_uint32_t t1;            /**< DHCPv6 T1 time (in sec) */
+    network_uint32_t t2;            /**< DHCPv6 T2 time (in sec) */
+    uint8_t opts[];                 /**< IA_NA options */
+} dhcpv6_opt_ia_na_t;
+
+/**
+ * @brief   DHCPv6 IA address option format
+ * @see [RFC 8415, section 21.6]
+ *      (https://tools.ietf.org/html/rfc8415#section-21.6)
+ */
+typedef struct __attribute__((packed)) {
+    network_uint16_t type;          /**< @ref DHCPV6_OPT_IAADDR */
+    network_uint16_t len;           /**< 25 + length of dhcpv6_opt_iapfx_t::opts in byte */
+    ipv6_addr_t addr;                /**< the address */
+    network_uint32_t pref;          /**< preferred lifetime (in sec) */
+    network_uint32_t valid;         /**< valid lifetime (in sec) */
+    uint8_t opts[];                 /**< IAprefix options */
+} dhcpv6_opt_iaaddr_t;
+
+/**
  * @brief   DHCPv6 option request option format
  * @see [RFC 8415, section 21.7]
  *      (https://tools.ietf.org/html/rfc8415#section-21.7)
@@ -161,6 +218,17 @@ typedef struct __attribute__((packed)) {
 } dhcpv6_opt_elapsed_time_t;
 
 /**
+ * @brief   DHCPv6 relay message option
+ * @see [RFC 8415, section 21.10]
+ *      (https://tools.ietf.org/html/rfc8415#section-21.10)
+ */
+typedef struct __attribute__((packed)) {
+    network_uint16_t type;          /**< @ref DHCPV6_OPT_RELAY_MSG */
+    network_uint16_t len;           /**< length of dhcpv6_opt_iid_t::msg in byte */
+    uint16_t msg[];                 /**< the relayed message */
+} dhcpv6_opt_relay_msg_t;
+
+/**
  * @brief   DHCPv6 status code option format
  * @see [RFC 8415, section 21.13]
  *      (https://tools.ietf.org/html/rfc8415#section-21.13)
@@ -171,6 +239,17 @@ typedef struct __attribute__((packed)) {
     network_uint16_t code;          /**< [status code](@ref net_dhcp6_status_codes) */
     char msg[];                     /**< UTF-8 encoded text string (not 0-terminated!) */
 } dhcpv6_opt_status_t;
+
+/**
+ * @brief   DHCPv6 interface-id option
+ * @see [RFC 8415, section 21.18]
+ *      (https://tools.ietf.org/html/rfc8415#section-21.18)
+ */
+typedef struct __attribute__((packed)) {
+    network_uint16_t type;          /**< @ref DHCPV6_OPT_IID */
+    network_uint16_t len;           /**< length of dhcpv6_opt_iid_t::iid in byte */
+    uint8_t iid[];                  /**< opaque interface identifier */
+} dhcpv6_opt_iid_t;
 
 /**
  * @brief   DHCPv6 DNS recursive name server option
@@ -216,6 +295,18 @@ typedef struct __attribute__((packed)) {
 } dhcpv6_opt_iapfx_t;
 
 /**
+ * @brief   DHCPv6 Information Refresh Time option format
+ * @see [RFC 8415, section 21.23]
+ *      (https://tools.ietf.org/html/rfc8415#section-21.23)
+ */
+typedef struct __attribute__((packed)) {
+    network_uint16_t type;          /**< @ref DHCPV6_OPT_IRT */
+    network_uint16_t len;           /**< always 4 */
+    network_uint32_t value;         /**< Time duration relative to the
+                                         current time (in sec) */
+} dhcpv6_opt_irt_t;
+
+/**
  * @brief   DHCPv6 SOL_MAX_RT option format
  * @see [RFC 8415, section 21.24]
  *      (https://tools.ietf.org/html/rfc8415#section-21.24)
@@ -225,6 +316,17 @@ typedef struct __attribute__((packed)) {
     network_uint16_t len;           /**< always 4 */
     network_uint32_t value;         /**< overriding value for SOL_MAX_RT (in sec) */
 } dhcpv6_opt_smr_t;
+
+/**
+ * @brief   DHCPv6 INF_MAX_RT option format
+ * @see [RFC 8415, section 21.25]
+ *      (https://tools.ietf.org/html/rfc8415#section-21.25)
+ */
+typedef struct __attribute__((packed)) {
+    network_uint16_t type;          /**< @ref DHCPV6_OPT_IMR */
+    network_uint16_t len;           /**< always 4 */
+    network_uint32_t value;         /**< overriding value for INF_MAX_RT (in sec) */
+} dhcpv6_opt_imr_t;
 
 /**
  * @brief   MUD URL DHCPv6 option format

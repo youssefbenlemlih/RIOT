@@ -201,6 +201,11 @@ unsigned irq_enable(void)
 
     _native_syscall_leave();
 
+    if (_native_in_isr == 0 && sched_context_switch_request) {
+        DEBUG("irq_enable() deferred thread_yield_higher()\n");
+        thread_yield_higher();
+    }
+
     DEBUG("irq_enable(): return\n");
 
     return prev_state;
@@ -218,6 +223,11 @@ void irq_restore(unsigned state)
     }
 
     return;
+}
+
+int irq_is_enabled(void)
+{
+    return native_interrupts_enabled;
 }
 
 int irq_is_in(void)
@@ -540,7 +550,6 @@ void native_interrupt_init(void)
     if (sigaction(SIGINT, &sa, NULL)) {
         err(EXIT_FAILURE, "native_interrupt_init: sigaction");
     }
-
 
     puts("RIOT native interrupts/signals initialized.");
 }

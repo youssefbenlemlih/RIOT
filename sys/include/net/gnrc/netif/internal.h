@@ -116,7 +116,6 @@ int gnrc_netif_ipv6_addr_add_internal(gnrc_netif_t *netif,
 void gnrc_netif_ipv6_addr_remove_internal(gnrc_netif_t *netif,
                                           const ipv6_addr_t *addr);
 
-
 /**
  * @brief   Returns the index of @p addr in gnrc_netif_t::ipv6_addrs of @p
  *          netif
@@ -716,6 +715,26 @@ static inline int gnrc_netif_ipv6_group_to_l2_group(gnrc_netif_t *netif,
     return l2util_ipv6_group_to_l2_group(netif->device_type, ipv6_group,
                                          l2_group);
 }
+
+/**
+ * @brief   Configures a prefix on a network interface.
+ *
+ *          If the interface is a 6LoWPAN interface, this will also
+ *          take care of setting up a compression context.
+ *
+ * @param[in] netif     Network interface the prefix should be added to
+ * @param[in] pfx       Prefix to configure
+ * @param[in] pfx_len   Length of @p pfx in bits
+ * @param[in] valid     Valid lifetime of the prefix in seconds
+ * @param[in] pref      Preferred lifetime of the prefix in seconds
+ *
+ * @return  >= 0, on success
+ * @return  -ENOMEM, when no space for new addresses (or its solicited nodes
+ *          multicast address) is left on the interface
+ */
+int gnrc_netif_ipv6_add_prefix(gnrc_netif_t *netif,
+                               const ipv6_addr_t *pfx, uint8_t pfx_len,
+                               uint32_t valid, uint32_t pref);
 #else   /* IS_USED(MODULE_GNRC_NETIF_IPV6) || defined(DOXYGEN) */
 #define gnrc_netif_ipv6_init_mtu(netif)                             (void)netif
 #define gnrc_netif_ipv6_iid_from_addr(netif, addr, addr_len, iid)   (-ENOTSUP)

@@ -206,6 +206,11 @@ config HAS_PERIPH_MCG
     help
         Indicates that an MCG peripheral is present.
 
+config HAS_PERIPH_CLIC
+    bool
+    help
+        Indicates that a RISC-V Core-local Interrupt Controller (CLIC) peripheral is present.
+
 config HAS_PERIPH_PLIC
     bool
     help
@@ -251,6 +256,11 @@ config HAS_PERIPH_RTC
     bool
     help
         Indicates that an RTC peripheral is present.
+
+config HAS_PERIPH_RTC_MEM
+    bool
+    help
+        Indicates that the RTC peripheral provides storage memory for deep sleep.
 
 config HAS_PERIPH_RTC_MS
     bool

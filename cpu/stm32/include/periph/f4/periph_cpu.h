@@ -32,7 +32,8 @@ extern "C" {
 #define ADC_DEVS            (1U)
 #elif defined(CPU_LINE_STM32F405xx)  || defined(CPU_LINE_STM32F407xx) \
     || defined(CPU_LINE_STM32F415xx) || defined(CPU_LINE_STM32F429xx) \
-    || defined(CPU_LINE_STM32F437xx) || defined(CPU_LINE_STM32F446xx)
+    || defined(CPU_LINE_STM32F437xx) || defined(CPU_LINE_STM32F446xx) \
+    || defined(CPU_LINE_STM32F469xx)
 #define ADC_DEVS            (3U)
 #endif
 
@@ -47,6 +48,12 @@ extern "C" {
 #else
 #define STM32_BOOTLOADER_ADDR   (0x1FFF0000)
 #endif
+
+/**
+ * @brief   Readout Protection (RDP) option bytes
+ */
+#define STM32_OPTION_BYTES   ((uint32_t*) 0x1FFFC000)
+#define GET_RDP(x) ((x & 0xFF00) >> 8)
 
 /**
  * @brief   Override the ADC resolution configuration

@@ -25,14 +25,12 @@
 #include <stdbool.h>
 
 #include "board.h"
+#include "cc2538_rfcore.h"
 
 #include "net/ieee802154.h"
 #include "kernel_defines.h"
 
 #include "net/ieee802154/radio.h"
-#if IS_USED(MODULE_NETDEV_IEEE802154_SUBMAC)
-#include "net/netdev/ieee802154_submac.h"
-#endif
 
 #include "net/netopt.h"
 
@@ -110,6 +108,8 @@ extern "C" {
 #define CC2538_STATE_SFD_WAIT_RANGE_MAX  (0x06U)  /**< max range value of SFD wait state */
 #define CC2538_FRMCTRL1_PENDING_OR_MASK  (0x04)   /**< mask for enabling or disabling the
                                                        frame pending bit */
+#define CC2538_FRMCTRL0_RX_MODE_DIS      (0xC)    /**< mask for disabling RX Chain during
+                                                       CCA */
 
 #define RFCORE_ASSERT(expr) (void)( (expr) || RFCORE_ASSERT_failure(#expr, __FUNCTION__, __LINE__) )
 
@@ -137,7 +137,7 @@ enum {
     FSM_STATE_TX_CALIBRATION = 32,
 };
 
-/*
+/**
  * @brief RFCORE_XREG_RFERRM bits
  */
 enum {
@@ -150,18 +150,18 @@ enum {
     NLOCK      = BIT(0),
 };
 
- /*
-  * @brief RFCORE_XREG_FRMCTRL0 bits
-  */
+/**
+ * @brief RFCORE_XREG_FRMCTRL0 bits
+ */
 enum {
     SET_RXENMASK_ON_TX  = BIT(0),
     IGNORE_TX_UNDERF    = BIT(1),
     PENDING_OR          = BIT(2),
 };
 
- /*
-  * @brief RFCORE_XREG_FRMCTRL1 bits
-  */
+/**
+ * @brief RFCORE_XREG_FRMCTRL1 bits
+ */
 enum {
     ENERGY_SCAN      = BIT(4),
     AUTOACK          = BIT(5),
@@ -169,7 +169,7 @@ enum {
     APPEND_DATA_MODE = BIT(7),
 };
 
-/*
+/**
  * @brief RFCORE_XREG_RFIRQM0 / RFCORE_XREG_RFIRQF0 bits
  */
 enum {
@@ -183,7 +183,7 @@ enum {
     RXMASKZERO       = BIT(7),
 };
 
-/*
+/**
  * @brief RFCORE_XREG_RFIRQM1 / RFCORE_XREG_RFIRQF1 bits
  */
 enum {
@@ -195,14 +195,18 @@ enum {
     CSP_WAIT         = BIT(5),
 };
 
-/* Values for use with CCTEST_OBSSELx registers: */
+/**
+ * @brief Values for use with CCTEST_OBSSELx registers.
+ */
 enum {
     rfc_obs_sig0 = 0,
     rfc_obs_sig1 = 1,
     rfc_obs_sig2 = 2,
 };
 
-/* Values for RFCORE_XREG_RFC_OBS_CTRLx registers: */
+/**
+ * @brief Values for RFCORE_XREG_RFC_OBS_CTRLx registers.
+ */
 enum {
     constant_value_0 = 0x00, /**< Constant value 0 */
     constant_value_1 = 0x01, /**< Constant value 1*/
@@ -249,8 +253,6 @@ enum {
     disabled         = 0xff, /**< disabled */
 };
 
-/** @} */
-
 /**
  * @name    RF CORE observable signals settings
  */
@@ -279,20 +281,40 @@ enum {
      (CONFIG_CC2538_RF_OBS_SIG_0_PCX > 7))
 #error "CONFIG_CC2538_RF_OBS_SIG_X_PCX must be between 0-7 (PC0-PC7)"
 #endif
-/** @} */
 
 /**
  * @brief   Device descriptor for CC2538 transceiver
- *
- * @extends netdev_ieee802154_t if using legacy radio
- * @extends netdev_ieee802154_submac_t if using radio HAL
  */
 typedef struct {
-#if IS_USED(MODULE_NETDEV_IEEE802154_SUBMAC)
-    netdev_ieee802154_submac_t netdev;   /**< netdev parent struct */
-#endif
     uint8_t state;                /**< current state of the radio */
 } cc2538_rf_t;
+
+/**
+ * @brief   Setup CC2538 in order to be used with the IEEE 802.15.4 Radio HAL
+ *
+ * @note    This functions MUST be called before @ref cc2538_init.
+ *
+ * @param[in] hal  pointer to the HAL descriptor associated to the device.
+ */
+void cc2538_rf_hal_setup(ieee802154_dev_t *hal);
+
+/**
+ * @brief   Enable CC2538 RF IRQs.
+ */
+static inline void cc2538_rf_enable_irq(void)
+{
+    RFCORE_XREG_RFIRQM1 = TXDONE | CSP_STOP | TXACKDONE;
+    RFCORE_XREG_RFIRQM0 = RXPKTDONE | SFD;
+}
+
+/**
+ * @brief   Disable CC2538 RF IRQs.
+ */
+static inline void cc2538_rf_disable_irq(void)
+{
+    RFCORE_XREG_RFIRQM1 = 0;
+    RFCORE_XREG_RFIRQM0 = 0;
+}
 
 /**
  * @brief   IRQ handler for RF events
@@ -378,7 +400,7 @@ void cc2538_off(void);
 bool cc2538_on(void);
 
 /**
- * @brief   Setup a CC2538 radio device for use with netdev
+ * @brief   Setup a CC2538 radio device
  *
  * @param[out] dev          Device descriptor
  */

@@ -110,6 +110,20 @@ ifneq (,$(filter dhcpv6_client,$(USEMODULE)))
   endif
 endif
 
+ifneq (,$(filter dhcpv6_relay,$(USEMODULE)))
+  USEMODULE += event
+  USEMODULE += sock_async_event
+  USEMODULE += sock_udp
+endif
+
+ifneq (,$(filter auto_init_dhcpv6_relay,$(USEMODULE)))
+  USEMODULE += dhcpv6_relay
+endif
+
+ifneq (,$(filter dns_%,$(USEMODULE)))
+  USEMODULE += dns
+endif
+
 ifneq (,$(filter fuzzing,$(USEMODULE)))
   USEMODULE += netdev_test
   USEMODULE += gnrc_netif
@@ -175,6 +189,7 @@ endif
 
 ifneq (,$(filter ieee802154_submac,$(USEMODULE)))
   USEMODULE += xtimer
+  USEMODULE += random
 endif
 
 ifneq (,$(filter l2util,$(USEMODULE)))
@@ -405,7 +420,10 @@ ifneq (,$(filter random,$(USEMODULE)))
     USEMODULE += fortuna
     USEMODULE += hashes
     USEMODULE += crypto
-    USEMODULE += xtimer
+    ifneq (,$(filter fortuna_reseed,$(USEMODULE)))
+        USEMODULE += atomic_utils
+        USEMODULE += xtimer
+    endif
   endif
 
   ifneq (,$(filter prng_tinymt32,$(USEMODULE)))
@@ -474,6 +492,7 @@ ifneq (,$(filter sock_async,$(USEMODULE)))
 endif
 
 ifneq (,$(filter sock_dns,$(USEMODULE)))
+  USEMODULE += dns_msg
   USEMODULE += sock_udp
   USEMODULE += sock_util
   USEMODULE += posix_headers
@@ -632,6 +651,10 @@ ifneq (,$(filter usbus_dfu,$(USEMODULE)))
   USEMODULE += riotboot_slot
 endif
 
+ifneq (,$(filter ut_process,$(USEMODULE)))
+  USEMODULE += fmt
+endif
+
 ifneq (,$(filter uuid,$(USEMODULE)))
   USEMODULE += hashes
   USEMODULE += random
@@ -667,6 +690,7 @@ endif
 ifneq (,$(filter riotboot_usb_dfu, $(USEMODULE)))
   USEMODULE += usbus_dfu
   USEMODULE += riotboot_flashwrite
+  USEMODULE += ztimer_sec
   FEATURES_REQUIRED += no_idle_thread
   FEATURES_REQUIRED += periph_pm
 endif
@@ -678,6 +702,10 @@ endif
 ifneq (,$(filter sock_dtls, $(USEMODULE)))
     USEMODULE += credman
     USEMODULE += sock_udp
+endif
+
+ifneq (,$(filter credman_load, $(USEMODULE)))
+  USEPKG += tiny-asn1
 endif
 
 ifneq (,$(filter suit,$(USEMODULE)))
@@ -695,7 +723,8 @@ ifneq (,$(filter suit_transport_%, $(USEMODULE)))
 endif
 
 ifneq (,$(filter suit_transport_coap, $(USEMODULE)))
-  USEMODULE += nanocoap
+  USEMODULE += nanocoap_sock
+  USEMODULE += sock_util
 endif
 
 ifneq (,$(filter suit_storage_%, $(USEMODULE)))
@@ -762,6 +791,37 @@ endif
 ifneq (,$(filter dbgpin,$(USEMODULE)))
   FEATURES_REQUIRED += periph_gpio
   FEATURES_REQUIRED += dbgpin
+endif
+
+ifneq (,$(filter fido2_ctap_%,$(USEMODULE)))
+  USEMODULE += fido2_ctap_transport
+  USEMODULE += fido2_ctap
+  ifneq (,$(filter fido2_ctap_transport_hid,$(USEMODULE)))
+      USEMODULE += usbus_hid
+      DISABLE_MODULE += auto_init_usbus
+  endif
+endif
+
+ifneq (,$(filter fido2_ctap,$(USEMODULE)))
+  FEATURES_REQUIRED += periph_flashpage
+  FEATURES_REQUIRED += periph_gpio_irq
+
+  USEPKG += tiny-asn1
+  USEPKG += tinycbor
+  USEPKG += micro-ecc
+
+  INCLUDE += $(RIOTPKG)/tinycbor
+
+  USEMODULE += mtd_flashpage
+  USEMODULE += mtd_write_page
+  USEMODULE += ztimer_msec
+  USEMODULE += event
+  USEMODULE += event_timeout
+  USEMODULE += prng_sha256prng
+  USEMODULE += cipher_modes
+  USEMODULE += crypto_aes_256
+  USEMODULE += hashes
+  USEMODULE += fido2
 endif
 
 include $(RIOTBASE)/sys/test_utils/Makefile.dep

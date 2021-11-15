@@ -7,7 +7,6 @@ BOARD_INSUFFICIENT_MEMORY := \
     atmega1284p \
     atmega328p \
     atmega328p-xplained-mini \
-    atxmega-a1u-xpro \
     atxmega-a3bu-xplained \
     derfmega128 \
     mega-xplained \
@@ -21,6 +20,7 @@ BOARD_INSUFFICIENT_MEMORY := \
     samd10-xmini \
     stk3200 \
     stm32f030f4-demo \
+    stm32g0316-disco \
     telosb \
     waspmote-pro \
     z1 \

@@ -15,6 +15,9 @@ to `RIOT`, the different files as well as their functionality.
 @note We assume here that your `CPU` and `CPU_MODEL` is already supported
 in `RIOT` so no peripheral or cpu implementation is needed.
 
+# Porting flowchart                                         {#porting-flowchart}
+@dotfile porting-boards.dot
+
 # General structure                                         {#general-structure}
 
 Like @ref creating-an-application "applications" or @ref creating-modules
@@ -59,17 +62,13 @@ somewhere else then they must be added to the include path. In
 `Makefile.include`: `INCLUDES += -I<some>/<directory>/<path>`
 
 Board initialization functions are defined in `board.c`. This file must at
-least define a `board_init()` function that is called at startup. This
-function initializes the `CPU` by calling`cpu_init()` among others. It is run
-before the scheduler is started, so it must not block (e.g. by performing I2C
-operations).
+least define a `board_init()` function that is called at startup.
+It is run before the scheduler is started, so it must not block (e.g. by
+performing I2C operations).
 
 ```c
 void board_init(void)
 {
-    /* initialize the CPU core */
-    cpu_init();
-
     /* initialize GPIO or others... */
     ...
 }
@@ -359,3 +358,13 @@ Some scripts and tools available to ease `BOARD` porting and testing:
 
   - Run `dist/tools/compile_and_test_for_board/compile_and_test_for_board.py . <board> --with-test-only`
     to run all automated tests on the new board.
+
+# Further reference                                         {#further-reference}
+
+- [In her blog][martines-blog], Martine Lenders documented her approach of
+  porting the @ref boards_feather-nrf52840 in February 2020.
+- [Over at HackMD][hackmd-slstk3400a], Akshai M documented his approach of
+  porting the @ref boards_slstk3400a in July 2020.
+
+[martines-blog]: https://blog.martine-lenders.eu/riot-board-en.html
+[hackmd-slstk3400a]: https://hackmd.io/njFHwQ33SNS3sQKAkLkNtQ

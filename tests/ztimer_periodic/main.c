@@ -32,11 +32,11 @@
 
 static mutex_t _mutex = MUTEX_INIT_LOCKED;
 
-#define N 5
+#define REPEAT 5
 
-static uint32_t _times[N];
+static uint32_t _times[REPEAT];
 static int _count;
-#define CLOCKS { ZTIMER_MSEC, ZTIMER_USEC }
+#define ZTIMER_CLOCKS { ZTIMER_MSEC, ZTIMER_USEC }
 static const char *_names[] = { "ZTIMER_MSEC", "ZTIMER_USEC" };
 static uint32_t _intervals[] = { 100, 10000 };
 static uint32_t _max_offsets[] = { 2, 100 };
@@ -54,17 +54,17 @@ static int callback(void *arg)
     }
 #endif
 
-    if (_count == N) {
+    if (_count == REPEAT) {
         mutex_unlock(&_mutex);
     }
 
-    return (_count == N);
+    return (_count == REPEAT);
 }
 
 int main(void)
 {
     ztimer_periodic_t t;
-    ztimer_clock_t * const clocks[] = CLOCKS;
+    ztimer_clock_t * const clocks[] = ZTIMER_CLOCKS;
     int failed = 0;
 
     for (size_t j = 0; j < ARRAY_SIZE(clocks); j++) {
@@ -85,10 +85,10 @@ int main(void)
             return 1;
         }
 
-        /* wait for periodic to trigger N times */
+        /* wait for periodic to trigger REPEAT times */
         mutex_lock(&_mutex);
 
-        for (unsigned i = 0; i < N; i++) {
+        for (unsigned i = 0; i < REPEAT; i++) {
             uint32_t offset = labs((int32_t)(_times[i] - _intervals[j] - last));
             printf("i: %u time: %" PRIu32 " offset: %" PRIu32 "\n",
                    i, _times[i], offset);

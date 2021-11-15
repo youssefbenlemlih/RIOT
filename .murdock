@@ -8,9 +8,26 @@
 : ${TEST_BOARDS_LLVM_COMPILE:=""}
 
 : ${TEST_KCONFIG_BOARDS_AVAILABLE:="
+dwm1001
+hifive1
 native
-samr21-xpro
+nrf52840dk
+nucleo-f072rb
 nucleo-f103rb
+nucleo-f207zg
+nucleo-f334r8
+nucleo-f429zi
+nucleo-f767zi
+nucleo-g071rb
+nucleo-g474re
+nucleo-l073rz
+nucleo-l152re
+nucleo-l433rc
+nucleo-l552ze-q
+p-nucleo-wb55
+remote-revb
+samr21-xpro
+seeedstudio-gd32
 "}
 
 : ${TEST_KCONFIG_ENFORCE_APP_GROUPS:="
@@ -32,9 +49,12 @@ tests/driver_t*
 tests/driver_u*
 tests/driver_v*
 tests/periph_*
+tests/pkg_elk
 tests/prng_*
 tests/xtimer_*
 tests/ztimer_*
+examples/hello-world
+tests/ieee802154_hal
 "}
 
 : ${TEST_WITH_CONFIG_SUPPORTED:="examples/suit_update tests/driver_at86rf2xx_aes"}
@@ -45,6 +65,7 @@ export STATIC_TESTS=0
 export CFLAGS_DBG=""
 export DLCACHE_DIR=${DLCACHE_DIR:-~/.dlcache}
 export ENABLE_TEST_CACHE=${ENABLE_TEST_CACHE:-1}
+export MURDOCK_REDIS_HOST=${MURDOCK_REDIS_HOST:-127.0.0.1}
 
 # This is a work around for a bug in CCACHE which interacts very badly with
 # some features of RIOT and of murdock. The result is that ccache is
@@ -67,7 +88,11 @@ NIGHTLY=${NIGHTLY:-0}
 RUN_TESTS=${RUN_TESTS:-${NIGHTLY}}
 
 DWQ_ENV="-E BOARDS -E APPS -E NIGHTLY -E RUN_TESTS -E ENABLE_TEST_CACHE
-         -E TEST_HASH -E CI_PULL_LABELS"
+         -E TEST_HASH -E CI_PULL_LABELS -EPKG_USE_MIRROR"
+
+if [ ${NIGHTLY} -eq 1 ]; then
+    export PKG_USE_MIRROR=0
+fi
 
 get_supported_kconfig_board_app() {
     local board=$1
@@ -250,11 +275,11 @@ test_hash_calc() {
 
 test_cache_get() {
     test "${ENABLE_TEST_CACHE}" = "1" || return 1
-    test -n "$(redis-cli get $1)" > /dev/null
+    test -n "$(redis-cli -h ${MURDOCK_REDIS_HOST} get $1)" > /dev/null
 }
 
 test_cache_put() {
-    redis-cli set "$1" ok
+    redis-cli -h ${MURDOCK_REDIS_HOST} set "$1" ok
 }
 
 # compile one app for one board with one toolchain. delete intermediates.

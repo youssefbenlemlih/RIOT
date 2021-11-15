@@ -41,9 +41,10 @@
 #endif
 
 /**
- * @brief   Declaration of GPIOs that can be used as DAC channels
+ * @name    Declaration of GPIOs that can be used as DAC channels
  *
  * ESP32-Ethernet-Kit has no GPIOs left that might be used as DAC channels.
+ * @{
  */
 #ifndef DAC_GPIOS
 #define DAC_GPIOS   { }
@@ -124,7 +125,6 @@
 #define UART0_TXD   GPIO1  /**< direct I/O pin for UART_DEV(0) TxD, can't be changed */
 #define UART0_RXD   GPIO3  /**< direct I/O pin for UART_DEV(0) RxD, can't be changed */
 /** @} */
-
 
 #ifdef __cplusplus
 } /* end extern "C" */

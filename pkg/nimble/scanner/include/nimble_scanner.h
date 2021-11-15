@@ -21,7 +21,9 @@
 #ifndef NIMBLE_SCANNER_H
 #define NIMBLE_SCANNER_H
 
+#include <errno.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "host/ble_hs.h"
 
@@ -30,20 +32,11 @@ extern "C" {
 #endif
 
 /**
- * @brief   Return values used by this submodule
- */
-enum {
-    NIMBLE_SCANNER_OK       =  0,
-    NIMBLE_SCANNER_SCANNING =  1,
-    NIMBLE_SCANNER_STOPPED  =  2,
-    NIMBLE_SCANNER_ERR      = -1,
-};
-
-/**
  * @brief   Callback signature triggered by this module for each discovered
  *          advertising packet
  *
- * @param[in] type      type of advertising packet, e.g BLE_HCI_ADV_TYPE_ADV_IND
+ * @param[in] type      type of advertising packet, e.g
+ *                      BLE_HCI_ADV_RPT_EVTYPE_ADV_IND
  * @param[in] addr      advertising address of the source node
  * @param[in] rssi      RSSI value for the received packet
  * @param[in] ad        advertising data
@@ -60,14 +53,19 @@ typedef void(*nimble_scanner_cb)(uint8_t type,
  *                      default parameters
  * @param[in] disc_cb   callback triggered of each received advertising packet
  *
- * @return  NIMBLE_SCANNER_OK on success
- * @return  NIMBLE_SCANNER_ERR if putting NimBLE into discovery mode failed
+ * @return  0 on success
  */
 int nimble_scanner_init(const struct ble_gap_disc_params *params,
                         nimble_scanner_cb disc_cb);
 
 /**
  * @brief   Start scanning using timing parameters configured on initialization
+ *
+ * @note    Scanning will run for ever unless stopped or unless a different
+ *          scan duration is set with @ref nimble_scanner_set_scan_duration
+ *
+ * @return  0 on success
+ * @return  -ECANCELED on error
  */
 int nimble_scanner_start(void);
 
@@ -79,10 +77,22 @@ void nimble_scanner_stop(void);
 /**
  * @brief   Get the current scanning status
  *
- * @return  NIMBLE_SCANNER_SCANNING if currently scanning
- * @return  NIMBLE_SCANNER_STOPPED if the scanner is stopped
+ * @return  true if currently scanning
+ * @return  false if the scanner is stopped
  */
-int nimble_scanner_status(void);
+static inline bool nimble_scanner_is_active(void)
+{
+    return ble_gap_disc_active();
+}
+
+/**
+ * @brief   Set the duration for the scanning procedure.
+ *
+ *          If there is an active scanning process, it will be restarted.
+ *
+ * @param[in]  duration_ms  duration of scanning procedure in ms
+ */
+void nimble_scanner_set_scan_duration(int32_t duration_ms);
 
 #ifdef __cplusplus
 }

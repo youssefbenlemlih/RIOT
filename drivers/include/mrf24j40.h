@@ -54,6 +54,7 @@
  *
  * @file
  * @brief       Interface definition for MRF24J40 based drivers
+ * @anchor      drivers_mrf24j40
  *
  * @author      Neo Nenaco <neo@nenaco.de>
  * @author      Koen Zandberg <koen@bergzand.net>
@@ -97,7 +98,6 @@ extern "C" {
                                                      *   active */
 #define MRF24J40_OPT_PRELOADING         (0x0400)    /**< preloading enabled */
 /** @} */
-
 
 #define MRF24J40_TASK_TX_DONE           (0x01)      /**< TX operation is done */
 #define MRF24J40_TASK_TX_READY          (0x02)      /**< TX operation results ready for processing */

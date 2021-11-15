@@ -48,6 +48,7 @@
 #ifndef PERIPH_FLASHPAGE_H
 #define PERIPH_FLASHPAGE_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "cpu_conf.h"
@@ -189,7 +190,7 @@ static inline void *flashpage_addr(unsigned page)
  *
  * @return              page containing the given address
  */
-static inline unsigned flashpage_page(void *addr)
+static inline unsigned flashpage_page(const void *addr)
 {
     return (((intptr_t)addr - CPU_FLASH_BASE) / FLASHPAGE_SIZE);
 }
@@ -199,7 +200,7 @@ static inline unsigned flashpage_page(void *addr)
 /* Bare prototypes for the above functions. See above for the documentation */
 size_t flashpage_size(unsigned page);
 void *flashpage_addr(unsigned page);
-unsigned flashpage_page(void *addr);
+unsigned flashpage_page(const void *addr);
 
 #endif
 
@@ -209,6 +210,22 @@ unsigned flashpage_page(void *addr);
  * @param[in] page      Page to erase
  */
 void flashpage_erase(unsigned page);
+
+/**
+ * @brief Get number of first free flashpage
+ *
+ * If riotboot is used in two slot mode, this number will change across
+ * firmware updates as the firmware slots alternate.
+ */
+unsigned flashpage_first_free(void);
+
+/**
+ * @brief Get number of last free flashpage
+ *
+ * If riotboot is used in two slot mode, this number will change across
+ * firmware updates as the firmware slots alternate.
+ */
+unsigned flashpage_last_free(void);
 
 /**
  * @brief   Write the given page with the given data
@@ -318,7 +335,7 @@ static inline void *flashpage_rwwee_addr(unsigned page)
  *
  * @return              RWWEE page containing the given address
  */
-static inline int flashpage_rwwee_page(void *addr)
+static inline int flashpage_rwwee_page(const void *addr)
 {
     return (int)(((int)addr - CPU_FLASH_RWWEE_BASE) / FLASHPAGE_SIZE);
 }

@@ -22,7 +22,7 @@
 #include <string.h>
 #include "byteorder.h"
 #include "periph/spi.h"
-#include "xtimer.h"
+#include "ztimer.h"
 #include "kernel_defines.h"
 
 #include "ili9341.h"
@@ -101,16 +101,16 @@ int ili9341_init(ili9341_t *dev, const ili9341_params_t *params)
     if (gpio_is_valid(dev->params->rst_pin)) {
         gpio_init(dev->params->rst_pin, GPIO_OUT);
         gpio_clear(dev->params->rst_pin);
-        xtimer_msleep(120);
+        ztimer_sleep(ZTIMER_MSEC, 120);
         gpio_set(dev->params->rst_pin);
     }
-    xtimer_msleep(120);
+    ztimer_sleep(ZTIMER_MSEC, 120);
 
     /* Acquire once at release at the end */
     _ili9341_spi_acquire(dev);
     /* Soft Reset */
     _write_cmd(dev, ILI9341_CMD_SWRESET, NULL, 0);
-    xtimer_msleep(120);
+    ztimer_sleep(ZTIMER_MSEC, 120);
 
     /* Display off */
     _write_cmd(dev, ILI9341_CMD_DISPOFF, NULL, 0);
@@ -131,7 +131,7 @@ int ili9341_init(ili9341_t *dev, const ili9341_params_t *params)
     _write_cmd(dev, ILI9341_CMD_VMCTRL2, command_params, 1);
 
     /* Memory access CTL */
-    command_params[0] = ILI9341_MADCTL_HORZ_FLIP;
+    command_params[0] = dev->params->rotation;
     command_params[0] |= dev->params->rgb ? 0 : ILI9341_MADCTL_BGR;
     _write_cmd(dev, ILI9341_CMD_MADCTL, command_params, 1);
 
@@ -150,7 +150,6 @@ int ili9341_init(ili9341_t *dev, const ili9341_params_t *params)
     /* Pixel format */
     command_params[0] = 0x55; /* 16 bit mode */
     _write_cmd(dev, ILI9341_CMD_PIXSET, command_params, 1);
-
 
     command_params[0] = 0x01;
     _write_cmd(dev, ILI9341_CMD_GAMSET, command_params, 1);
@@ -230,7 +229,6 @@ void ili9341_read_cmd(const ili9341_t *dev, uint8_t cmd, uint8_t *data, size_t l
                        data, len);
     spi_release(dev->params->spi);
 }
-
 
 void ili9341_fill(const ili9341_t *dev, uint16_t x1, uint16_t x2, uint16_t y1,
                   uint16_t y2, uint16_t color)

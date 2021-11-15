@@ -32,6 +32,11 @@
 extern "C" {
 #endif
 
+/**
+￼ * @brief   Bit mask for the MCAUSE register
+￼ */
+#define CPU_CSR_MCAUSE_CAUSE_MSK        (0x0fffu)
+
 extern volatile int riscv_in_isr;
 
 /**
@@ -90,6 +95,18 @@ static inline __attribute__((always_inline)) void irq_restore(
 static inline __attribute__((always_inline)) int irq_is_in(void)
 {
     return riscv_in_isr;
+}
+
+static inline __attribute__((always_inline)) int irq_is_enabled(void)
+{
+    unsigned state;
+    __asm__ volatile (
+        "csrr %[dest], mstatus"
+        :[dest]    "=r" (state)
+        : /* no inputs */
+        : "memory"
+        );
+    return (state & MSTATUS_MIE);
 }
 
 #ifdef __cplusplus

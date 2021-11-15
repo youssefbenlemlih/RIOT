@@ -21,7 +21,7 @@
 #define PERIPH_CONF_H
 
 #include "periph_cpu.h"
-#include "cfg_clock_32_1.h"
+#include "cfg_clock_32_0.h"
 #include "cfg_rtt_default.h"
 #include "cfg_timer_default.h"
 
@@ -32,6 +32,9 @@ extern "C" {
 /**
  * @name    UART configuration
  * @{
+ */
+/**
+ * @brief   UART configuration.
  */
 static const uart_conf_t uart_config[] = {
     {
@@ -46,14 +49,22 @@ static const uart_conf_t uart_config[] = {
     },
 };
 
+/**
+ * @brief   UART 0 Interrupt Service Routine.
+ */
 #define UART_0_ISR          (isr_uart0)
-
+/**
+ * @brief   Number of UART peripherals.
+ */
 #define UART_NUMOF          ARRAY_SIZE(uart_config)
 /** @} */
 
 /**
  * @name    I2C configuration
  * @{
+ */
+/**
+ * @brief   I2C configuration.
  */
 static const i2c_conf_t i2c_config[] = {
     {   /* External connectors */
@@ -70,12 +81,18 @@ static const i2c_conf_t i2c_config[] = {
     },
 };
 
+/**
+ * @brief   Number of I2C peripherals.
+ */
 #define I2C_NUMOF           (sizeof(i2c_config) / sizeof(i2c_config[0]))
 /** @} */
 
 /**
  * @name    SPI configuration
  * @{
+ */
+/**
+ * @brief   SPI configuration.
  */
 static const spi_conf_t spi_config[] = {
     {   /* External connectors */
@@ -92,6 +109,9 @@ static const spi_conf_t spi_config[] = {
     },
 };
 
+/**
+ * @brief   Number of SPI peripherals.
+ */
 #define SPI_NUMOF           ARRAY_SIZE(spi_config)
 /** @} */
 
@@ -100,3 +120,4 @@ static const spi_conf_t spi_config[] = {
 #endif
 
 #endif /* PERIPH_CONF_H */
+/** @} */

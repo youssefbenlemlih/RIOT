@@ -23,7 +23,6 @@
  * @author      Martine Lenders <mlenders@inf.fu-berlin.de>
  */
 
-
 #ifndef NET_IPV6_ADDR_H
 #define NET_IPV6_ADDR_H
 
@@ -53,7 +52,6 @@ extern "C" {
  */
 #define IPV6_ADDR_MAX_STR_LEN       (sizeof("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"))
 #endif
-
 
 /**
  * @brief The first 10 bits of a site-local IPv6 unicast address
@@ -164,7 +162,6 @@ typedef union {
                                                0x00, 0x00, 0x00, 0x00, \
                                                0x00, 0x00, 0x00, 0x00, \
                                                0x00, 0x00, 0x00, 0x02 }}
-
 
 /**
  * @brief   Static initializer for the site-local all routers multicast IPv6
@@ -483,7 +480,6 @@ static inline bool ipv6_addr_is_global(const ipv6_addr_t *addr)
     }
 }
 
-
 /**
  * @brief   Check if @p addr is solicited-node multicast address.
  *
@@ -501,7 +497,6 @@ static inline bool ipv6_addr_is_solicited_node(const ipv6_addr_t *addr)
     return (memcmp(addr, &ipv6_addr_solicited_node_prefix,
                    sizeof(ipv6_addr_t) - 3) == 0);
 }
-
 
 /**
  * @brief   Checks if two IPv6 addresses are equal.
@@ -704,7 +699,7 @@ static inline void ipv6_addr_set_solicited_nodes(ipv6_addr_t *out, const ipv6_ad
  * @param[out] result       The resulting string representation of at least
  *                          @ref IPV6_ADDR_MAX_STR_LEN
  * @param[in] addr          An IPv6 address
- * @param[in] result_len    Length of @p result_len
+ * @param[in] result_len    Length of @p result
  *
  * @return  @p result, on success
  * @return  NULL, if @p result_len was lesser than IPV6_ADDR_MAX_STR_LEN

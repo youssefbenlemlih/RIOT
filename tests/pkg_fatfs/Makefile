@@ -10,7 +10,7 @@ BOARD_WHITELIST := airfy-beacon arduino-due arduino-duemilanove \
                    arduino-mkrzero arduino-uno arduino-zero avsextrem \
                    b-l072z-lrwan1 b-l475e-iot01a blackpill blackpill-128kib \
                    bluepill bluepill-128kib cc2538dk ek-lm4f120xl \
-                   feather-m0 fox frdm-k22f frdm-k64f i-nucleo-lrwan1 ikea-tradfri \
+                   feather-m0 frdm-k22f frdm-k64f i-nucleo-lrwan1 ikea-tradfri \
                    iotlab-a8-m3 iotlab-m3 limifrog-v1 maple-mini msb-430 msb-430h msba2 \
                    msbiot mulle nrf52840dk nrf52dk nrf6310 nucleo-f207zg nucleo-f303ze \
                    nucleo-f412zg nucleo-f413zh nucleo-f429zi nucleo-f446ze \
@@ -45,10 +45,11 @@ USEMODULE += mtd_sdcard
 endif
 
 image:
-	@tar -xjf riot_fatfs_disk.tar.gz -C ./bin/
+	${Q}mkdir -p bin
+	${Q}tar -xjf riot_fatfs_disk.tar.bz2 -C ./bin/
 
 #this generates a compressed fat image file that can be used by the fat driver on native
 compressed-image:
-	@./create_fat_image_file.sh $(FATFS_IMAGE_FILE_SIZE_MIB)
+	${Q}./create_fat_image_file.sh $(FATFS_IMAGE_FILE_SIZE_MIB)
 
 include $(RIOTBASE)/Makefile.include

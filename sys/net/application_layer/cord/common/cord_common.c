@@ -27,7 +27,6 @@
 #define ENABLE_DEBUG 0
 #include "debug.h"
 
-
 #ifdef CONFIG_CORD_EP
 #define BUFSIZE         (sizeof(CONFIG_CORD_EP))   /* contains \0 termination char */
 #else
@@ -77,6 +76,16 @@ int cord_common_add_qstring(coap_pkt_t *pkt)
     res = coap_opt_add_uri_query(pkt, "d", CORD_D);
     if (res < 0) {
         return res;
+    }
+#endif
+
+#ifdef CONFIG_CORD_EXTRAARGS
+    static const char *extra[] = { CONFIG_CORD_EXTRAARGS };
+    for (unsigned i = 0; i < ARRAY_SIZE(extra); ++i) {
+        res = coap_opt_add_uri_query(pkt, extra[i], NULL);
+        if (res < 0) {
+            return res;
+        }
     }
 #endif
 

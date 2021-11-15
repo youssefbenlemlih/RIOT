@@ -86,6 +86,23 @@ be placed in the application's folder. For an example of this you can check
 the [tests/kconfig](https://github.com/RIOT-OS/RIOT/tree/master/tests/kconfig)
 application.
 
+## Configuration via environment variables                {#env-config-kconfig}
+For easy debugging of configuration or testing new modules by compiling them
+into existing applications, one can also use environment variables prefixed by
+`RIOT_CONFIG_`. To achieve the same configuration exemplified in
+@ref configure-using-files, e.g., you could also use
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.sh}
+RIOT_CONFIG_KCONFIG_MODULE_SOCK_UTIL=1 \
+RIOT_CONFIG_SOCK_UTIL_SCHEME_MAXLEN=24 \
+    make
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+All the checks that apply for `.config` files also are done with this approach.
+
+Mind that this is only meant to be used during development. In production,
+please set the configuration via `.config` files.
+
 ## A note on the usage of CFLAGS
 When a certain module is being configured via Kconfig the configuration macro
 will not longer be overridable by means of CFLAGS (e.g. set on the
@@ -458,6 +475,7 @@ reserved for the cases described below:
 | `HAS_` | Models a [feature](build-system-basics.html#features) |
 | `KCONFIG_USEMODULE_` | Used during transition to enable configuration of a module via Kconfig |
 | `KCONFIG_USEPKG_` | Used during transition to enable configuration of a package via Kconfig |
+| `HAVE_` | Models a feature not present in makefiles, will be unified in the future |
 | `USEMODULE_` | Models a [RIOT module](creating-modules.html#creating-modules). Generated from `USEMODULE` variable |
 | `USEPKG_` | Models an [external package](group__pkg.html). Generated from `USEPKG` variable |
 

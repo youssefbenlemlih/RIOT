@@ -31,14 +31,13 @@ extern "C" {
 #define MCU_IOC_BASE           (0x40081000) /**< IOC (MCU) base address */
 /** @} */
 
-
 /**
  * @brief obtain IOCFG-register for a DIO
  *
  * @param[in] dio_num DIO number (0-31)
  */
 typedef struct {
-    reg32_t CFG[32]; /**< config */
+    reg32_t CFG[32]; /**< Config */
 } cc26x0_ioc_regs_t;
 
 #define IOC ((cc26x0_ioc_regs_t *)(MCU_IOC_BASE)) /**< IOC register banks */
@@ -54,7 +53,7 @@ typedef struct {
 #define IOCFG_PORTID_AON_SCK            0x00000002  /**< AON SPI-S SCK */
 #define IOCFG_PORTID_AON_SDI            0x00000003  /**< AON SPI-S SDI */
 #define IOCFG_PORTID_AON_SDO            0x00000004  /**< AON SPI-S SDO */
-#endif //CPU_VARIANT_X0
+#endif /* CPU_VARIANT_X0 */
 
 #define IOCFG_PORTID_AON_CLK32K         0x00000007  /**< AON external 32kHz clock */
 #define IOCFG_PORTID_AUX_IO             0x00000008  /**< AUX IO */
@@ -184,5 +183,4 @@ typedef struct {
 #endif
 
 #endif /* CC26XX_CC13XX_IOC_H */
-
-/*@}*/
+/** @} */

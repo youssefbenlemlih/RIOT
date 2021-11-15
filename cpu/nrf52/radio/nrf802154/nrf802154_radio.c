@@ -98,10 +98,7 @@ static struct {
 };
 
 static const ieee802154_radio_ops_t nrf802154_ops;
-
-ieee802154_dev_t nrf802154_hal_dev = {
-    .driver = &nrf802154_ops,
-};
+static ieee802154_dev_t *nrf802154_hal_dev;
 
 static void _power_on(void)
 {
@@ -174,7 +171,7 @@ static int _write(ieee802154_dev_t *dev, const iolist_t *iolist)
     /* specify the length of the package. */
     txbuf[0] = len + IEEE802154_FCS_LEN;
 
-    return len;
+    return 0;
 }
 
 static int _confirm_transmit(ieee802154_dev_t *dev, ieee802154_tx_info_t *info)
@@ -428,7 +425,7 @@ static int _request_set_trx_state(ieee802154_dev_t *dev, ieee802154_trx_state_t 
 static void _timer_cb(void *arg, int chan)
 {
     (void)arg;
-    ieee802154_dev_t *dev = &nrf802154_hal_dev;
+    ieee802154_dev_t *dev = nrf802154_hal_dev;
 
     if (chan == MAC_TIMER_CHAN_ACK) {
         /* Copy sqn */
@@ -477,7 +474,7 @@ int nrf802154_init(void)
 
 void isr_radio(void)
 {
-    ieee802154_dev_t *dev = &nrf802154_hal_dev;
+    ieee802154_dev_t *dev = nrf802154_hal_dev;
 
     if (NRF_RADIO->EVENTS_FRAMESTART) {
         NRF_RADIO->EVENTS_FRAMESTART = 0;
@@ -783,15 +780,15 @@ static int _set_csma_params(ieee802154_dev_t *dev, const ieee802154_csma_be_t *b
 void nrf802154_setup(nrf802154_t *dev)
 {
     (void) dev;
-#if IS_USED(MODULE_NETDEV_IEEE802154_SUBMAC)
-    netdev_ieee802154_submac_t *netdev_submac = &dev->netdev;
-    netdev_ieee802154_t *netdev_ieee802154 = &netdev_submac->dev;
-    netdev_t *netdev = &netdev_ieee802154->netdev;
-    netdev_register(netdev, NETDEV_NRF802154, 0);
-    DEBUG("[nrf802154] init submac.\n")
-    netdev_ieee802154_submac_init(&dev->netdev, &nrf802154_hal_dev);
-#endif
     nrf802154_init();
+}
+
+void nrf802154_hal_setup(ieee802154_dev_t *hal)
+{
+    /* We don't set hal->priv because the context of this device is global */
+    /* We need to store a reference to the HAL descriptor though for the ISR */
+    hal->driver = &nrf802154_ops;
+    nrf802154_hal_dev = hal;
 }
 
 static const ieee802154_radio_ops_t nrf802154_ops = {

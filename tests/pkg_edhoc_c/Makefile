@@ -1,5 +1,11 @@
 include ../Makefile.tests_common
 
+include $(RIOTBASE)/tests/Makefile.boards.netif
+BOARD_WHITELIST += $(BOARD_PROVIDES_NETIF)
+# Cannot run the test on `murdock` in `native`
+#   open(/dev/net/tun): No such file or directory
+TEST_ON_CI_BLACKLIST += native
+
 # Edhoc related packages
 USEPKG += edhoc-c
 USEMODULE += edhoc-c_crypto_tinycrypt
@@ -8,7 +14,7 @@ USEMODULE += edhoc-c_cbor_nanocbor
 
 # Include packages that pull up and auto-init the link layer.
 # NOTE: 6LoWPAN will be included if IEEE802.15.4 devices are present
-USEMODULE += gnrc_netdev_default
+USEMODULE += netdev_default
 
 USEMODULE += auto_init_gnrc_netif
 # Specify the mandatory networking modules for IPv6 and UDP

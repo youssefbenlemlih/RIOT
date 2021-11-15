@@ -1,6 +1,6 @@
 PKG_NAME    = nimble
 PKG_URL     = https://github.com/apache/mynewt-nimble.git
-PKG_VERSION = 940cc0b4a81295305ceead15928da24fe6e6f603
+PKG_VERSION = 6c9f70972e8c68efe1fd38d413778c9487c5d997
 PKG_LICENSE = Apache-2.0
 
 include $(RIOTBASE)/pkg/pkg.mk
@@ -50,9 +50,6 @@ nimble_host_util:
 nimble_host_store_ram:
 	$(QQ)"$(MAKE)" -C $(PDIR)/nimble/host/store/ram/src/ -f $(RIOTBASE)/Makefile.base MODULE=$@
 
-nimble_tinycrypt:
-	$(QQ)"$(MAKE)" -C $(PDIR)/ext/tinycrypt/src/ -f $(RIOTBASE)/Makefile.base MODULE=$@
-
 # service implementations
 nimble_svc_gap:
 	$(QQ)"$(MAKE)" -C $(PDIR)/nimble/host/services/gap/src/ -f $(RIOTBASE)/Makefile.base MODULE=$@
@@ -85,6 +82,9 @@ nimble_autoconn:
 
 nimble_netif:
 	$(QQ)"$(MAKE)" -C $(TDIR)/netif/
+
+nimble_rpble:
+	$(QQ)"$(MAKE)" -C $(TDIR)/rpble/
 
 nimble_scanlist:
 	$(QQ)"$(MAKE)" -C $(TDIR)/scanlist

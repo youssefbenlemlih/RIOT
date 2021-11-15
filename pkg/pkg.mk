@@ -24,7 +24,14 @@ ifeq (,$(PKG_LICENSE))
   $(error PKG_LICENSE not defined)
 endif
 
+ifneq (, $(PKG_MIRROR_URL))
+  ifneq (0, $(PKG_USE_MIRROR))
+    PKG_URL = $(PKG_MIRROR_URL)
+  endif
+endif
+
 PKG_DIR ?= $(CURDIR)
+PKG_PATCH_DIR ?= $(PKG_DIR)/patches
 
 PKG_BUILD_OUT_OF_SOURCE ?= 1
 ifeq (1,$(PKG_BUILD_OUT_OF_SOURCE))
@@ -60,7 +67,7 @@ GITAMFLAGS ?= $(GIT_QUIET) --no-gpg-sign --ignore-whitespace --whitespace=nowarn
 
 .PHONY: all prepare clean distclean FORCE
 
-PKG_PATCHES = $(sort $(wildcard $(PKG_DIR)/patches/*.patch))
+PKG_PATCHES = $(sort $(wildcard $(PKG_PATCH_DIR)/*.patch))
 
 PKG_STATE_FILE = .pkg-state.git
 PKG_STATE      = $(PKG_SOURCE_DIR)/$(PKG_STATE_FILE)

@@ -2,7 +2,7 @@
 APPLICATION = gnrc_border_router
 
 # If no BOARD is found in the environment, use this default:
-BOARD ?= samr21-xpro
+BOARD ?= native
 
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../..
@@ -21,7 +21,7 @@ WIFI_PASS ?= "Your_secure_password"
 
 # Include packages that pull up and auto-init the link layer.
 # NOTE: 6LoWPAN will be included if IEEE802.15.4 devices are present
-USEMODULE += gnrc_netdev_default
+USEMODULE += netdev_default
 USEMODULE += auto_init_gnrc_netif
 # Specify the mandatory networking modules for 6LoWPAN border router
 USEMODULE += gnrc_sixlowpan_border_router_default

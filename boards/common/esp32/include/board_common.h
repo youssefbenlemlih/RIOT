@@ -13,7 +13,7 @@
  * This file contains board configurations that are valid for all ESP32.
  *
  * For detailed information about the configuration of ESP32 boards, see
- * section \ref esp32_comm_periph "Common Peripherals".
+ * section \ref esp32_peripherals "Common Peripherals".
  *
  * @author      Gunar Schorcht <gunar@schorcht.net>
  * @file
@@ -90,7 +90,6 @@ extern "C" {
 #endif
 /** @} */
 
-
 /**
  * @name    STDIO configuration
  * @{
@@ -100,7 +99,6 @@ extern "C" {
 #define STDIO_UART_BAUDRATE      (115200)
 #endif
 /** @} */
-
 
 #if MODULE_MTD || DOXYGEN
 /**
@@ -114,7 +112,7 @@ extern "C" {
  * @brief   MTD drive start address in SPI flash memory
  *
  * Defines the start address of the MTD system device in the SPI
- * flash memory. It can be overridden by \ref esp32_app_spec_conf
+ * flash memory. It can be overridden by \ref esp32_application_specific_configurations
  * "application-specific board configuration"
  *
  * If the MTD start address is not defined or is 0, the first possible
@@ -134,7 +132,6 @@ extern mtd_dev_t *mtd0;
 /** @} */
 #endif /* MODULE_MTD || DOXYGEN */
 
-
 #if MODULE_SPIFFS || DOXYGEN
 /**
  * @name    SPIFFS configuration for the system MTD device
@@ -149,7 +146,6 @@ extern mtd_dev_t *mtd0;
 #define SPIFFS_CACHE 1
 /** @} */
 #endif /* MODULE_SPIFFS || DOXYGEN */
-
 
 /**
  * @brief Initialize the hardware that is common for all ESP32 boards.

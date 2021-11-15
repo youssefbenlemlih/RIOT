@@ -351,6 +351,26 @@ _nib_onl_entry_t *_nib_onl_iter(const _nib_onl_entry_t *last);
 _nib_onl_entry_t *_nib_onl_get(const ipv6_addr_t *addr, unsigned iface);
 
 /**
+ * @brief   Gets a node by IPv6 address and interface from the neighbor cache
+ *
+ * @pre     `(addr != NULL)`
+ *
+ * @param[in] addr  The address of a node. Must not be NULL.
+ * @param[in] iface The interface to the node. May be 0 for any interface.
+ *
+ * @return  The Neighbor Cache entry for node with @p addr and @p iface on success.
+ * @return  NULL, if there is no such entry.
+ */
+static inline _nib_onl_entry_t *_nib_onl_nc_get(const ipv6_addr_t *addr, unsigned iface)
+{
+    _nib_onl_entry_t *nce = _nib_onl_get(addr, iface);
+    if (nce && (nce->mode & _NC)) {
+        return nce;
+    }
+    return NULL;
+}
+
+/**
  * @brief   Creates or gets an existing node from the neighbor cache by address
  *
  * @pre     `((cstate & GNRC_IPV6_NIB_NC_INFO_NUD_STATE_MASK) !=
@@ -662,6 +682,16 @@ _nib_offl_entry_t *_nib_pl_add(unsigned iface,
  * Corresponding on-link entry is removed, too.
  */
 void _nib_pl_remove(_nib_offl_entry_t *nib_offl);
+
+/**
+ * @brief   Removes a prefix from the prefix list as well as the addresses
+ *          associated with the prefix.
+ *
+ * @param[in,out] nib_offl    An entry.
+ *
+ * Corresponding on-link entry is removed, too.
+ */
+void _nib_offl_remove_prefix(_nib_offl_entry_t *pfx);
 
 #if IS_ACTIVE(CONFIG_GNRC_IPV6_NIB_ROUTER) || DOXYGEN
 /**

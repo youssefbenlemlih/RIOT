@@ -8,7 +8,6 @@ BOARD_INSUFFICIENT_MEMORY := \
     atmega1284p \
     atmega328p \
     atmega328p-xplained-mini \
-    atxmega-a1u-xpro \
     atxmega-a3bu-xplained \
     b-l072z-lrwan1 \
     blackpill \
@@ -59,6 +58,7 @@ BOARD_INSUFFICIENT_MEMORY := \
     stk3200 \
     stm32f030f4-demo \
     stm32f0discovery \
+    stm32g0316-disco \
     stm32l0538-disco \
     stm32mp157c-dk2 \
     telosb \

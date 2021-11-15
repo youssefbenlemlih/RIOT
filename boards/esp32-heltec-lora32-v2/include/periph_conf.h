@@ -17,10 +17,10 @@
  * Additionally, it has an OLED display connected via I2C on board.
  *
  * For detailed information about the configuration of ESP32 boards, see
- * section \ref esp32_comm_periph "Common Peripherals".
+ * section \ref esp32_peripherals "Common Peripherals".
  *
  * @note
- * Most definitions can be overridden by an \ref esp32_app_spec_conf
+ * Most definitions can be overridden by an \ref esp32_application_specific_configurations
  * "application-specific board configuration".
  *
  * @file
@@ -68,7 +68,6 @@
 #endif
 /** @} */
 
-
 /**
  * @name   I2C configuration
  *
@@ -90,7 +89,6 @@
 #define I2C0_SDA    GPIO4           /**< SDA signal of I2C_DEV(0) [UEXT1] */
 #endif
 /** @} */
-
 
 /**
  * @name   PWM channel configuration
@@ -166,7 +164,6 @@
          GPIO9 and GPIO10 are not available for UART1 as configured
 #endif
 /** @} */
-
 
 #ifdef __cplusplus
 } /* end extern "C" */

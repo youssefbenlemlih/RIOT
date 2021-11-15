@@ -1,13 +1,14 @@
 [![Nightly CI status master][master-ci-badge]][master-ci-link]
+[![Nightly HiL CI overview][hil-ci-badge]][hil-ci-link]
 [![GitHub release][release-badge]][release-link]
 [![License][license-badge]][license-link]
 [![API docs][api-badge]][api-link]
 [![Wiki][wiki-badge]][wiki-link]
-[![Merge chance][merge-chance-badge]][merge-chance-link]
 [![Stack Overflow questions][stackoverflow-badge]][stackoverflow-link]
 [![Twitter][twitter-badge]][twitter-link]
 [![Matrix][matrix-badge]][matrix-link]
 
+<p align="center"><img src="doc/doxygen/src/riot-logo.svg" width="66%"><!--
                           ZZZZZZ
                         ZZZZZZZZZZZZ
                       ZZZZZZZZZZZZZZZZ
@@ -32,7 +33,7 @@
       ZZZZZZ     ZZZZZZ          ZZZZZ      777     7777777777       777
        ZZZZZZZZZZZZZZZ            ZZZZ      777      77777777        777
          ZZZZZZZZZZZ               Z
-            ZZZZZ
+            ZZZZZ                                                           --></p>
 
 The friendly Operating System for IoT!
 
@@ -141,14 +142,13 @@ https://www.riot-os.org
 
 
 [api-badge]: https://img.shields.io/badge/docs-API-informational.svg
-[api-link]: https://riot-os.org/api/
+[api-link]: https://doc.riot-os.org/
 [license-badge]: https://img.shields.io/github/license/RIOT-OS/RIOT
 [license-link]: https://github.com/RIOT-OS/RIOT/blob/master/LICENSE
 [master-ci-badge]: https://ci.riot-os.org/RIOT-OS/RIOT/master/latest/badge.svg
 [master-ci-link]: https://ci.riot-os.org/nightlies.html#master
 [matrix-badge]: https://img.shields.io/badge/chat-Matrix-brightgreen.svg
 [matrix-link]: https://matrix.to/#/#riot-os:matrix.org
-[merge-chance-badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fmerge-chance.info%2Fbadge%3Frepo%3DRIOT-OS/RIOT&color=informational
 [merge-chance-link]: https://merge-chance.info/target?repo=RIOT-OS/RIOT
 [release-badge]: https://img.shields.io/github/release/RIOT-OS/RIOT.svg
 [release-link]: https://github.com/RIOT-OS/RIOT/releases/latest
@@ -158,3 +158,5 @@ https://www.riot-os.org
 [twitter-link]: https://twitter.com/RIOT_OS
 [wiki-badge]: https://img.shields.io/badge/docs-Wiki-informational.svg
 [wiki-link]: https://github.com/RIOT-OS/RIOT/wiki
+[hil-ci-link]: https://hil.riot-os.org/results/nightly/latest/overview
+[hil-ci-badge]: https://img.shields.io/badge/CI-HiL-blue

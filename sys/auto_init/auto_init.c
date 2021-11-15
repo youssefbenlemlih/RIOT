@@ -21,25 +21,25 @@
  */
 #include <stdint.h>
 #include <stdio.h>
-
+#include "sched.h"
 #include "auto_init.h"
 #include "kernel_defines.h"
 #include "log.h"
 
 void auto_init(void)
 {
-   if (IS_USED(MODULE_AUTO_INIT_ZTIMER)) {
+    if (IS_USED(MODULE_AUTO_INIT_ZTIMER)) {
         LOG_DEBUG("Auto init ztimer.\n");
         void ztimer_init(void);
         ztimer_init();
     }
     if (IS_USED(MODULE_AUTO_INIT_XTIMER) &&
-            !IS_USED(MODULE_ZTIMER_XTIMER_COMPAT)) {
+        !IS_USED(MODULE_ZTIMER_XTIMER_COMPAT)) {
         LOG_DEBUG("Auto init xtimer.\n");
         extern void xtimer_init(void);
         xtimer_init();
     }
-   if (IS_USED(MODULE_AUTO_INIT_RANDOM)) {
+    if (IS_USED(MODULE_AUTO_INIT_RANDOM)) {
         LOG_DEBUG("Auto init random.\n");
         extern void auto_init_random(void);
         auto_init_random();
@@ -90,7 +90,7 @@ void auto_init(void)
     }
     if (IS_USED(MODULE_AUTO_INIT_GNRC_IPV6)) {
         LOG_DEBUG("Auto init gnrc_ipv6.\n");
-        extern void gnrc_ipv6_init(void);
+        extern kernel_pid_t gnrc_ipv6_init(void);
         gnrc_ipv6_init();
     }
     if (IS_USED(MODULE_AUTO_INIT_GNRC_UDP)) {
@@ -100,7 +100,7 @@ void auto_init(void)
     }
     if (IS_USED(MODULE_AUTO_INIT_GNRC_TCP)) {
         LOG_DEBUG("Auto init gnrc_tcp.\n");
-        extern void gnrc_tcp_init(void);
+        extern int gnrc_tcp_init(void);
         gnrc_tcp_init();
     }
     if (IS_USED(MODULE_AUTO_INIT_LWIP)) {
@@ -267,10 +267,21 @@ void auto_init(void)
         dhcpv6_client_auto_init();
     }
 
+    if (IS_USED(MODULE_AUTO_INIT_DHCPV6_RELAY)) {
+        LOG_DEBUG("Auto init DHCPv6 relay agent.\n");
+        extern void dhcpv6_relay_auto_init(void);
+        dhcpv6_relay_auto_init();
+    }
+
     if (IS_USED(MODULE_GNRC_DHCPV6_CLIENT_SIMPLE_PD)) {
         LOG_DEBUG("Auto init DHCPv6 client for simple prefix delegation\n");
         extern void gnrc_dhcpv6_client_simple_pd_init(void);
         gnrc_dhcpv6_client_simple_pd_init();
+    }
+
+    if (IS_USED(MODULE_GNRC_IPV6_AUTO_SUBNETS_AUTO_INIT)) {
+        extern void gnrc_ipv6_auto_subnets_init(void);
+        gnrc_ipv6_auto_subnets_init();
     }
 
     if (IS_USED(MODULE_AUTO_INIT_MULTIMEDIA)) {
@@ -285,5 +296,11 @@ void auto_init(void)
         LOG_DEBUG("Auto init screen devices\n");
         extern void auto_init_screen(void);
         auto_init_screen();
+    }
+
+    if (IS_USED(MODULE_AUTO_INIT_BENCHMARK_UDP)) {
+        LOG_DEBUG("Auto init UDP benchmark\n");
+        extern void benchmark_udp_auto_init(void);
+        benchmark_udp_auto_init();
     }
 }
