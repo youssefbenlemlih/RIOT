@@ -33,8 +33,8 @@ USEMODULE += vfs
 
 # Use a file system
 # USEMODULE += littlefs
-USEMODULE += littlefs2
-# USEMODULE += spiffs
+# USEMODULE += littlefs2
+USEMODULE += esp_spiffs
 # USEMODULE += fatfs_vfs
 USEMODULE += constfs
 # USEMODULE += devfs
