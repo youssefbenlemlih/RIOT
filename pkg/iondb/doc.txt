@@ -1,0 +1,52 @@
+/**
+ * @defgroup pkg_iondb IonDB Key-Value Store library
+ * @ingroup  pkg
+ * @brief    C library providing IonDB
+
+ *
+ * # IonDB RIOT package
+ *
+ * IonDB stores values associated to keys. 
+ * You can insert, update, delete and search for keys.
+ * It offers different types of dictionaries like an Open Adress Hash Map, Flat File etc.
+ * It offers disk based storage out of the box.
+ * 
+ *
+ * For more information, see the [IonDB website](http://iondb.org/) or the github repo wiki.
+ *
+ * ## Integration
+ * 
+ * The Iondb library integration is dependant on the vfs layer. 
+ * Therefore to save files in a filesystem you have to additionally add a filesysten module to your application.
+ * For more information look at the /tests/pkg_iondb tests.
+ *
+ * ## Usage
+ *
+ * Add it as a package in your application's Makefile:
+ *
+ * ```makefile
+ * USEPKG += iondb
+ * ```
+ *
+ * The integration of different dictionary types is modular. 
+ * By default and at minimum flat_file is used.
+ * To additionally use other dictionaries, add them as a module in your application's Makfile:
+ * 
+ ```makefile
+ * USEPKG += iondb
+ * USEMODULE += iondb-dictionary-bpptree
+ * USEMODULE += iondb-dictionary-linearhash
+ * USEMODULE += iondb-dictionary-openaddressfilehash
+ * USEMODULE += iondb-dictionary-openaddresshash
+ * USEMODULE += iondb-dictionary-skiplist
+ * ```
+ *
+ *
+ * Include the iondb master table header in your code:
+ *
+ * ```c
+ * #include "ion_master_table.h"
+ * ```
+ *
+ * @see     https://github.com/iondbproject/iondb
+ */
