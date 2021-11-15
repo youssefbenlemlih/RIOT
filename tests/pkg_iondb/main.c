@@ -937,7 +937,7 @@ static int test06(ion_dictionary_type_t current_type)
     return 0;
 }
 
-/* TEST06: Cursor All Records */
+/* TEST07: Cursor All Records */
 static int test07(ion_dictionary_type_t current_type)
 {
     puts("[TEST07]: Cursor All Records");
@@ -1191,7 +1191,7 @@ static int test08(ion_dictionary_type_t current_type)
     return 0;
 }
 
-/* TEST08: Testing Duplicates with Read and Cursor using test08Keys keys and test08Values values */
+/* TEST09: Testing Duplicates with Read and Cursor using test08Keys keys and test08Values values */
 static int test09(ion_dictionary_type_t current_type)
 {
     puts("[TEST09]: Config Test");

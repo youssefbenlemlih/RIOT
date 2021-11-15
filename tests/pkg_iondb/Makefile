@@ -2,8 +2,6 @@ include ../Makefile.tests_common
 
 BOARD ?= native
 
-USEPKG += fatfs
-
 USEMODULE += fatfs_vfs
 FEATURES_OPTIONAL += periph_rtc
 
@@ -14,6 +12,7 @@ USEMODULE += iondb-dictionary-openaddressfilehash
 USEMODULE += iondb-dictionary-openaddresshash
 USEMODULE += iondb-dictionary-skiplist
 
+# For real hardware and spi sd_card usage
 ifneq ($(BOARD), native)
 	USEMODULE += sdcard_spi
 	USEMODULE += fatfs_diskio_mtd
@@ -29,7 +28,7 @@ ifneq ($(BOARD), native)
 	CFLAGS += -DSDCARD_SPI_PARAM_MISO=GPIO_PIN\(2,12\)
 	endif
 
-else
+else # For native usage
 	FATFS_IMAGE_FILE_SIZE_MIB ?= 128
 
 	USEMODULE += mtd_native
