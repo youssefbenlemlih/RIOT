@@ -1,0 +1,6 @@
+MODULE := iondb-dictionary-openaddressfilehash
+
+SRC += open_address_file_hash.c
+SRC += open_address_file_hash_dictionary_handler.c
+
+include $(RIOTBASE)/Makefile.base

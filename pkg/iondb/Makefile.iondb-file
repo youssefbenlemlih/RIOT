@@ -1,0 +1,8 @@
+MODULE := iondb-file
+
+SRC += ion_file.c
+SRC += linked_file_bag.c
+
+SRCXXEXCLUDE = sd_stdio_c_iface.cpp # To Exclude the cpp file
+
+include $(RIOTBASE)/Makefile.base

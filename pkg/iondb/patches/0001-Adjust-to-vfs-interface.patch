@@ -1,0 +1,1433 @@
+From fc742a0aff817812a393e69e61747dfee751eb58 Mon Sep 17 00:00:00 2001
+From: aco401 <tobias.westphal@haw-hamburg.de>
+Date: Fri, 22 Oct 2021 14:30:52 +0200
+Subject: [PATCH] Adjust to vfs interface
+
+---
+ src/dictionary/bpp_tree/bpp_tree.c            | 16 +++--
+ src/dictionary/bpp_tree/bpp_tree.h            |  6 +-
+ src/dictionary/bpp_tree/bpp_tree_handler.c    | 29 +++++++++-
+ src/dictionary/dictionary.c                   | 15 ++---
+ src/dictionary/dictionary.h                   |  5 +-
+ src/dictionary/dictionary_types.h             |  2 +-
+ src/dictionary/flat_file/flat_file.c          |  8 +--
+ src/dictionary/flat_file/flat_file.h          |  4 ++
+ .../flat_file/flat_file_dictionary_handler.c  |  2 +
+ src/dictionary/flat_file/flat_file_types.h    |  2 +
+ src/dictionary/ion_master_table.c             | 44 ++++++++++++--
+ src/dictionary/ion_master_table.h             | 31 +++++++---
+ src/dictionary/linear_hash/linear_hash.c      | 34 ++++++-----
+ .../linear_hash/linear_hash_handler.c         | 14 +++--
+ .../linear_hash/linear_hash_handler.h         |  6 +-
+ .../linear_hash/linear_hash_types.h           |  1 +
+ .../open_address_file_hash.c                  | 51 ++++++++--------
+ .../open_address_file_hash.h                  |  6 ++
+ ...pen_address_file_hash_dictionary_handler.c | 58 +++++++++++++++++--
+ ...pen_address_file_hash_dictionary_handler.h |  1 +
+ .../open_address_hash/open_address_hash.c     | 30 +++++-----
+ .../open_address_hash/open_address_hash.h     |  4 ++
+ .../open_address_hash_dictionary_handler.c    | 30 +++++++++-
+ src/dictionary/skip_list/skip_list.c          |  9 ---
+ src/file/ion_file.c                           |  4 +-
+ src/file/ion_file.h                           | 17 +++++-
+ src/file/kv_stdio_intercept.h                 | 29 +++++++++-
+ src/key_value/kv_system.h                     | 38 +++++++++---
+ 28 files changed, 375 insertions(+), 121 deletions(-)
+
+diff --git a/src/dictionary/bpp_tree/bpp_tree.c b/src/dictionary/bpp_tree/bpp_tree.c
+index f0e44d62..fd789971 100644
+--- a/src/dictionary/bpp_tree/bpp_tree.c
++++ b/src/dictionary/bpp_tree/bpp_tree.c
+@@ -442,7 +442,7 @@ search(
+ 	 *   CC_GT				  key > mkey
+ 	*/
+ 	ion_bpp_h_node_t	*h = handle;
+-	int					cc;		/* condition code */
++	int					cc = 0;		/* condition code */
+ 	int					m;		/* midpoint of search */
+ 	int					lb;		/* lower-bound of binary search */
+ 	int					ub;		/* upper-bound of binary search */
+@@ -544,6 +544,9 @@ search(
+ 
+ 		return cc;
+ 	}
++#if ION_BPP_DEBUG
++				DUMP("Didnt find key", "%s");
++#endif
+ 
+ 	/* didn't find key */
+ 	return cc;
+@@ -1050,6 +1053,8 @@ b_close(
+ #if defined(ARDUINO)
+ 
+ 	if (h->fp.file) {
++
++
+ #else
+ 
+ 	if (h->fp) {
+@@ -1094,6 +1099,9 @@ b_get(
+ 				return bErrOk;
+ 			}
+ 			else {
++#if ION_BPP_DEBUG
++				DUMP("bErrKeyNotFound ", "%s");
++#endif
+ 				return bErrKeyNotFound;
+ 			}
+ 		}
+@@ -1178,7 +1186,7 @@ b_insert(
+ 	unsigned int		keyOff;
+ 	ion_bpp_bool_t		lastGEvalid;		/* true if GE branch taken */
+ 	ion_bpp_bool_t		lastLTvalid;		/* true if LT branch taken after GE branch */
+-	ion_bpp_address_t	lastGE;			/* last childGE traversed */
++	ion_bpp_address_t	lastGE = 0;			/* last childGE traversed */
+ 	unsigned int		lastGEkey;	/* last childGE key traversed */
+ 	int					height;	/* height of tree */
+ 
+@@ -1464,8 +1472,8 @@ b_delete(
+ 	unsigned int		keyOff;
+ 	ion_bpp_bool_t		lastGEvalid;		/* true if GE branch taken */
+ 	ion_bpp_bool_t		lastLTvalid;		/* true if LT branch taken after GE branch */
+-	ion_bpp_address_t	lastGE;			/* last childGE traversed */
+-	unsigned int		lastGEkey;	/* last childGE key traversed */
++	ion_bpp_address_t	lastGE = 0;			/* last childGE traversed */
++	unsigned int		lastGEkey = 0;	/* last childGE key traversed */
+ 	ion_bpp_buffer_t	*root;
+ 	ion_bpp_buffer_t	*gbuf;
+ 
+diff --git a/src/dictionary/bpp_tree/bpp_tree.h b/src/dictionary/bpp_tree/bpp_tree.h
+index 539f539b..d8ea6b1f 100644
+--- a/src/dictionary/bpp_tree/bpp_tree.h
++++ b/src/dictionary/bpp_tree/bpp_tree.h
+@@ -49,6 +49,10 @@ extern "C" {
+ #include "./../dictionary.h"
+ #include "./../../file/ion_file.h"
+ 
++#if ION_DEBUG
++#define ION_BPP_DEBUG (0)
++#endif
++
+ /****************************
+  * implementation dependent *
+  ****************************/
+@@ -64,7 +68,7 @@ typedef long	ion_bpp_address_t;		/* record address for btree node */
+  *	CC_GT	 key1 > key2
+  *	CC_EQ	 key1 = key2
+ */
+-typedef char (*ion_bpp_comparison_t)(
++typedef int (*ion_bpp_comparison_t)(
+ 	ion_key_t		key1,
+ 	ion_key_t		key2,
+ 	ion_key_size_t	size
+diff --git a/src/dictionary/bpp_tree/bpp_tree_handler.c b/src/dictionary/bpp_tree/bpp_tree_handler.c
+index e2fc5ce3..f40751a2 100644
+--- a/src/dictionary/bpp_tree/bpp_tree_handler.c
++++ b/src/dictionary/bpp_tree/bpp_tree_handler.c
+@@ -107,6 +107,9 @@ bpptree_create_dictionary(
+ 	int actual_filename_length = dictionary_get_filename(id, "bpt", addr_filename);
+ 
+ 	if (actual_filename_length >= ION_MAX_FILENAME_LENGTH) {
++#ifdef ION_BPP_DEBUG
++	DUMP(actual_filename_length, "%d");
++#endif
+ 		return err_uninitialized;
+ 	}
+ 
+@@ -119,10 +122,16 @@ bpptree_create_dictionary(
+ 	ion_bpp_err_t bErr = b_open(info, &(bpptree->tree));
+ 
+ 	if (bErrOk != bErr) {
+-		return err_uninitialized;
++#ifdef ION_BPP_DEBUG
++	DUMP(bErr, "%d");
++#endif
++		return err_file_open_error;
+ 	}
+ 
+ 	if (NULL == handler) {
++#ifdef ION_BPP_DEBUG
++	DUMP((void*)handler, "%p");
++#endif
+ 		return err_uninitialized;
+ 	}
+ 
+@@ -168,17 +177,32 @@ bpptree_insert(
+ 		offset = ION_FILE_NULL;
+ 	}
+ 
++/* #if ION_BPP_DEBUG
++	if (bErr != bErrOk)
++		DUMP(bErr, "%i");
++#endif */
++
+ 	err = lfb_put(&(bpptree->values), (ion_byte_t *) value, bpptree->super.record.value_size, offset, &offset);
+ 
+ 	if (err_ok == err) {
+ 		if (bErrKeyNotFound == bErr) {
++/* #if ION_BPP_DEBUG
++				DUMP("Inserting", "%s");
++#endif */
++
+ 			bErr = b_insert(bpptree->tree, key, offset);
+ 		}
+ 		else {
++/* #if ION_BPP_DEBUG
++				DUMP("Updating", "%s");
++#endif */
+ 			bErr = b_update(bpptree->tree, key, offset);
+ 		}
+ 
+ 		if (bErrOk != bErr) {
++/* #if ION_BPP_DEBUG
++				DUMP("Inserting gone wrong", "%s");
++#endif */
+ 			return ION_STATUS_ERROR(err_unable_to_insert);
+ 		}
+ 
+@@ -230,6 +254,9 @@ bpptree_get(
+ 	bErr	= b_get(bpptree->tree, key, &offset);
+ 
+ 	if (bErrOk != bErr) {
++#if ION_BPP_DEBUG
++				DUMP("GEtting gone wrong", "%s");
++#endif
+ 		return ION_STATUS_ERROR(err_item_not_found);
+ 	}
+ 
+diff --git a/src/dictionary/dictionary.c b/src/dictionary/dictionary.c
+index f5350f75..b8f09314 100644
+--- a/src/dictionary/dictionary.c
++++ b/src/dictionary/dictionary.c
+@@ -57,7 +57,7 @@ dictionary_get_filename(
+ 				The size of the keys being compared.
+ @return		The resulting comparison value.
+ */
+-char
++int
+ dictionary_compare_char_array(
+ 	ion_key_t		first_key,
+ 	ion_key_t		second_key,
+@@ -76,7 +76,7 @@ dictionary_compare_char_array(
+ 				The (maximum) size of the keys being compared.
+ @return		The resulting comparison value.
+ */
+-char
++int
+ dictionary_compare_null_terminated_string(
+ 	ion_key_t		first_key,
+ 	ion_key_t		second_key,
+@@ -114,6 +114,7 @@ dictionary_switch_compare(
+ 
+ 		default: {
+ 			/* do something - you must bind the correct comparison function */
++			compare = NULL;
+ 			break;
+ 		}
+ 	}
+@@ -203,14 +204,14 @@ dictionary_delete(
+ 	return dictionary->handler->remove(dictionary, key);
+ }
+ 
+-char
++int
+ dictionary_compare_unsigned_value(
+ 	ion_key_t		first_key,
+ 	ion_key_t		second_key,
+ 	ion_key_size_t	key_size
+ ) {
+ 	int		idx;
+-	char	return_value = ION_RETURN_VALUE;
++	int	return_value = ION_RETURN_VALUE;
+ 
+ 	/*
+ 	 * In this case, the endianness of the process does matter as the code does
+@@ -235,14 +236,14 @@ dictionary_compare_unsigned_value(
+ 	return return_value;
+ }
+ 
+-char
++int
+ dictionary_compare_signed_value(
+ 	ion_key_t		first_key,
+ 	ion_key_t		second_key,
+ 	ion_key_size_t	key_size
+ ) {
+ 	int		idx;
+-	char	return_value = ION_RETURN_VALUE;
++	int	return_value = ION_RETURN_VALUE;
+ 
+ 	/*
+ 	 * In this case, the endianness of the process does matter as the code does
+@@ -304,7 +305,7 @@ dictionary_open(
+ 		ffdict_init(&fallback_handler);
+ 
+ 		ion_dictionary_config_info_t fallback_config = {
+-			config->id, 0, config->type, config->key_size, config->value_size, 1
++			config->id, 0, config->type, config->key_size, config->value_size, 1, dictionary_type_flat_file_t, ion_dictionary_status_closed
+ 		};
+ 
+ 		err = dictionary_open(&fallback_handler, &fallback_dict, &fallback_config);
+diff --git a/src/dictionary/dictionary.h b/src/dictionary/dictionary.h
+index 7fe1bf49..5ea92d8b 100644
+--- a/src/dictionary/dictionary.h
++++ b/src/dictionary/dictionary.h
+@@ -45,6 +45,7 @@ extern "C" {
+ #include "../key_value/kv_system.h"
+ #include "dictionary_types.h"
+ 
++
+ /**
+ @brief			Given the ID, implementation specific extension, and a buffer to write to,
+ 				writes back the formatted filename for any implementation instance.
+@@ -216,7 +217,7 @@ dictionary_destroy_dictionary(
+ 				The length of the key in bytes.
+ @return		The resulting comparison value.
+ */
+-char
++int
+ dictionary_compare_unsigned_value(
+ 	ion_key_t		first_key,
+ 	ion_key_t		second_key,
+@@ -243,7 +244,7 @@ dictionary_compare_unsigned_value(
+ 				The length of the key in bytes.
+ @return		The resulting comparison value.
+ */
+-char
++int
+ dictionary_compare_signed_value(
+ 	ion_key_t		first_key,
+ 	ion_key_t		second_key,
+diff --git a/src/dictionary/dictionary_types.h b/src/dictionary/dictionary_types.h
+index 608b7314..76a530d5 100644
+--- a/src/dictionary/dictionary_types.h
++++ b/src/dictionary/dictionary_types.h
+@@ -80,7 +80,7 @@ typedef struct dictionary_handler ion_dictionary_handler_t;
+ /**
+ @brief	Function pointer type for dictionary comparison methods.
+ */
+-typedef char (*ion_dictionary_compare_t)(
++typedef int (*ion_dictionary_compare_t)(
+ 	ion_key_t,
+ 	ion_key_t,
+ 	ion_key_size_t
+diff --git a/src/dictionary/flat_file/flat_file.c b/src/dictionary/flat_file/flat_file.c
+index ac0ca0c0..e0480cb5 100644
+--- a/src/dictionary/flat_file/flat_file.c
++++ b/src/dictionary/flat_file/flat_file.c
+@@ -8,18 +8,14 @@
+ 			IonDB Project Contributors (see AUTHORS.md)
+ @par Redistribution and use in source and binary forms, with or without
+ 	modification, are permitted provided that the following conditions are met:
+-
+ @par 1.Redistributions of source code must retain the above copyright notice,
+ 	this list of conditions and the following disclaimer.
+-
+ @par 2.Redistributions in binary form must reproduce the above copyright notice,
+ 	this list of conditions and the following disclaimer in the documentation
+ 	and/or other materials provided with the distribution.
+-
+ @par 3.Neither the name of the copyright holder nor the names of its contributors
+ 	may be used to endorse or promote products derived from this software without
+ 	specific prior written permission.
+-
+ @par THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ 	AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ 	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+@@ -664,7 +660,7 @@ flat_file_binary_search(
+ 			return err;
+ 		}
+ 
+-		char comp_result = flat_file->super.compare(target_key, row.key, flat_file->super.record.key_size);
++		int comp_result = flat_file->super.compare(target_key, row.key, flat_file->super.record.key_size);
+ 
+ 		if (comp_result > 0) {
+ 			low_idx = mid_idx + 1;
+@@ -705,4 +701,4 @@ flat_file_binary_search(
+ 
+ 	*location = low_idx;
+ 	return low_idx >= 0 ? err_ok : err_item_not_found;
+-}
++}
+\ No newline at end of file
+diff --git a/src/dictionary/flat_file/flat_file.h b/src/dictionary/flat_file/flat_file.h
+index 8e6ccf86..dd917d45 100644
+--- a/src/dictionary/flat_file/flat_file.h
++++ b/src/dictionary/flat_file/flat_file.h
+@@ -43,6 +43,10 @@ extern "C" {
+ 
+ #include "flat_file_types.h"
+ 
++#if ION_DEBUG
++#define ION_FF_DEBUG (0)
++#endif
++
+ /**
+ @brief		Initializes the flat file implementation and creates all necessary files.
+ @details	A check is done to see if this is actually an attempt to open a previously existing
+diff --git a/src/dictionary/flat_file/flat_file_dictionary_handler.c b/src/dictionary/flat_file/flat_file_dictionary_handler.c
+index 3244166d..3077f6ce 100644
+--- a/src/dictionary/flat_file/flat_file_dictionary_handler.c
++++ b/src/dictionary/flat_file/flat_file_dictionary_handler.c
+@@ -301,8 +301,10 @@ ffdict_find(
+ 			/* Find the first satisfactory key. */
+ 			ion_fpos_t			loc			= -1;
+ 			ion_flat_file_row_t row;
++
+ 			ion_err_t			scan_result = flat_file_scan(flat_file, -1, &loc, &row, ION_FLAT_FILE_SCAN_FORWARDS, flat_file_predicate_within_bounds, (*cursor)->predicate->statement.range.lower_bound, (*cursor)->predicate->statement.range.upper_bound);
+ 
++
+ 			if (err_file_hit_eof == scan_result) {
+ 				/* This means the returned node is smaller than the lower bound, which means that there are no valid records to return */
+ 				(*cursor)->status = cs_end_of_results;
+diff --git a/src/dictionary/flat_file/flat_file_types.h b/src/dictionary/flat_file/flat_file_types.h
+index 324fb7e8..6d69dc45 100644
+--- a/src/dictionary/flat_file/flat_file_types.h
++++ b/src/dictionary/flat_file/flat_file_types.h
+@@ -43,6 +43,7 @@ extern "C" {
+ 
+ #include "../dictionary.h"
+ #include "../../file/sd_stdio_c_iface.h"
++#include "vfs_stdio_c_iface.h"
+ 
+ /**
+ @brief		This type describes the status flag within a flat file row.
+@@ -67,6 +68,7 @@ typedef ion_byte_t ion_flat_file_row_status_t;
+ */
+ #define ION_FLAT_FILE_SCAN_BACKWARDS	0
+ 
++
+ /**
+ @brief		Metadata container that holds flat file specific information.
+ */
+diff --git a/src/dictionary/ion_master_table.c b/src/dictionary/ion_master_table.c
+index 50e12ccd..22589b73 100644
+--- a/src/dictionary/ion_master_table.c
++++ b/src/dictionary/ion_master_table.c
+@@ -355,6 +355,11 @@ ion_master_table_create_dictionary(
+ 	ion_value_size_t			value_size,
+ 	ion_dictionary_size_t		dictionary_size
+ ) {
++	if (handler == NULL || handler->create_dictionary == NULL) 
++	{
++		return err_uninitialized;
++	}
++
+ 	ion_err_t			err;
+ 	ion_dictionary_id_t id;
+ 
+@@ -406,7 +411,7 @@ ion_find_by_use_master_table(
+ 
+ 	id			= 1;
+ 
+-	if (ION_MASTER_TABLE_FIND_LAST == whence) {
++	if ((char)ION_MASTER_TABLE_FIND_LAST == whence) {
+ 		id = ion_master_table_next_id - 1;
+ 	}
+ 
+@@ -475,7 +480,10 @@ ion_open_dictionary(
+ 		return err_uninitialized;
+ 	}
+ 
+-	ion_switch_handler(config.dictionary_type, handler);
++	if ((err = ion_switch_handler(config.dictionary_type, handler)) != err_ok)
++	{
++		return err;
++	}
+ 
+ 	err = dictionary_open(handler, dictionary, &config);
+ 
+@@ -486,6 +494,10 @@ ion_err_t
+ ion_close_dictionary(
+ 	ion_dictionary_t *dictionary
+ ) {
++	if (dictionary == NULL) 
++	{
++		return err_uninitialized;
++	}
+ 	ion_err_t err;
+ 
+ 	err = dictionary_close(dictionary);
+@@ -497,6 +509,10 @@ ion_delete_dictionary(
+ 	ion_dictionary_t	*dictionary,
+ 	ion_dictionary_id_t id
+ ) {
++	if (dictionary == NULL) 
++	{
++		return err_uninitialized;
++	}
+ 	ion_err_t				err;
+ 	ion_dictionary_type_t	type;
+ 
+@@ -519,7 +535,10 @@ ion_delete_dictionary(
+ 
+ 		ion_dictionary_handler_t handler;
+ 
+-		ion_switch_handler(type, &handler);
++		if ((err = ion_switch_handler(type, &handler)) != err_ok)
++		{
++			return err;
++		}
+ 
+ 		err = dictionary_destroy_dictionary(&handler, id);
+ 
+@@ -539,39 +558,56 @@ ion_switch_handler(
+ 	ion_dictionary_handler_t	*handler
+ ) {
+ 	switch (type) {
++
++#if MODULE_IONDB_DICTIONARY_BPPTREE
+ 		case dictionary_type_bpp_tree_t: {
+ 			bpptree_init(handler);
+ 			break;
+ 		}
+-
++#endif
++		
++#if MODULE_IONDB_DICTIONARY_FLATFILE
+ 		case dictionary_type_flat_file_t: {
+ 			ffdict_init(handler);
+ 			break;
+ 		}
++#endif
+ 
++#if MODULE_IONDB_DICTIONARY_OPENADDRESSFILEHASH
+ 		case dictionary_type_open_address_file_hash_t: {
+ 			oafdict_init(handler);
+ 			break;
+ 		}
++#endif
+ 
++#if MODULE_IONDB_DICTIONARY_OPENADDRESSHASH
+ 		case dictionary_type_open_address_hash_t: {
+ 			oadict_init(handler);
+ 			break;
+ 		}
++#endif
+ 
++#if MODULE_IONDB_DICTIONARY_SKIPLIST
+ 		case dictionary_type_skip_list_t: {
+ 			sldict_init(handler);
+ 			break;
+ 		}
++#endif
+ 
++#if MODULE_IONDB_DICTIONARY_LINEARHASH
+ 		case dictionary_type_linear_hash_t: {
+ 			linear_hash_dict_init(handler);
+ 			break;
+ 		}
++#endif
+ 
+ 		case dictionary_type_error_t: {
+ 			return err_uninitialized;
+ 		}
++
++		default: {
++			return err_uninitialized;
++		}
+ 	}
+ 
+ 	return err_ok;
+diff --git a/src/dictionary/ion_master_table.h b/src/dictionary/ion_master_table.h
+index 5e9cfa46..2f807622 100644
+--- a/src/dictionary/ion_master_table.h
++++ b/src/dictionary/ion_master_table.h
+@@ -51,15 +51,32 @@
+ extern "C" {
+ #endif
+ 
++
++
+ #include "dictionary.h"
+ #include "../file/sd_stdio_c_iface.h"
+-#include "../file/kv_stdio_intercept.h"
+-#include "bpp_tree/bpp_tree_handler.h"
+-#include "flat_file/flat_file_dictionary_handler.h"
+-#include "open_address_file_hash/open_address_file_hash_dictionary_handler.h"
+-#include "open_address_hash/open_address_hash_dictionary_handler.h"
+-#include "skip_list/skip_list_handler.h"
+-#include "linear_hash/linear_hash_handler.h"
++#include "vfs_stdio_c_iface.h"
++#include "kv_stdio_intercept.h"
++
++#if MODULE_IONDB_DICTIONARY_BPPTREE
++#include "bpp_tree_handler.h"
++#endif
++#if MODULE_IONDB_DICTIONARY_FLATFILE
++#include "flat_file_dictionary_handler.h"
++#endif
++#if MODULE_IONDB_DICTIONARY_OPENADDRESSFILEHASH
++#include "open_address_file_hash_dictionary_handler.h"
++#endif
++#if MODULE_IONDB_DICTIONARY_OPENADDRESSHASH
++#include "open_address_hash_dictionary_handler.h"
++#endif
++#if MODULE_IONDB_DICTIONARY_SKIPLIST
++#include "skip_list_handler.h"
++#endif
++#if MODULE_IONDB_DICTIONARY_LINEARHASH
++#include "linear_hash_handler.h"
++#endif
++
+ 
+ #define ION_MASTER_TABLE_CALCULATE_POS	-1
+ #define ION_MASTER_TABLE_WRITE_FROM_END -2
+diff --git a/src/dictionary/linear_hash/linear_hash.c b/src/dictionary/linear_hash/linear_hash.c
+index bf259adb..df448667 100644
+--- a/src/dictionary/linear_hash/linear_hash.c
++++ b/src/dictionary/linear_hash/linear_hash.c
+@@ -147,12 +147,6 @@ linear_hash_init(
+ 		}
+ 	}
+ 
+-	err = linear_hash_write_state(linear_hash);
+-
+-	if (err != err_ok) {
+-		return err;
+-	}
+-
+ 	/* return pointer to the linear_hash that is sitting in memory */
+ 	return err_ok;
+ }
+@@ -168,6 +162,9 @@ ion_err_t
+ linear_hash_write_state(
+ 	linear_hash_table_t *linear_hash
+ ) {
++	if (0 != fseek(linear_hash->state, 0, SEEK_SET)) {
++		return err_file_bad_seek;
++	}
+ 	if (1 != fwrite(&linear_hash->initial_size, sizeof(linear_hash->initial_size), 1, linear_hash->state)) {
+ 		return err_file_write_error;
+ 	}
+@@ -196,12 +193,8 @@ linear_hash_write_state(
+ 		return err_file_write_error;
+ 	}
+ 
+-	ion_byte_t *cached_bucket_map = alloca(sizeof(ion_fpos_t) * linear_hash->bucket_map->current_size);
+ 
+-	memset(cached_bucket_map, 0, sizeof(ion_fpos_t) * linear_hash->bucket_map->current_size);
+-	memcpy(cached_bucket_map, linear_hash->bucket_map->data, linear_hash->num_buckets * sizeof(ion_fpos_t));
+-
+-	if (1 != fwrite(cached_bucket_map, sizeof(linear_hash->bucket_map->data), 1, linear_hash->state)) {
++	if (1 != fwrite(linear_hash->bucket_map->data, sizeof(linear_hash->bucket_map->data) * sizeof(ion_fpos_t), 1, linear_hash->state)) {
+ 		return err_file_write_error;
+ 	}
+ 
+@@ -251,7 +244,18 @@ linear_hash_read_state(
+ 		return err_file_read_error;
+ 	}
+ 
+-	if (1 != fwrite(&linear_hash->bucket_map->data, sizeof(ion_fpos_t) * linear_hash->num_buckets, 1, linear_hash->state)) {
++	// Free any allocated heap space
++	if (linear_hash->bucket_map->data != NULL) {
++		free(linear_hash->bucket_map->data);
++	}
++
++	// Allocate new heap space for bucket map and initialize with 0
++	linear_hash->bucket_map->data = malloc(sizeof(ion_fpos_t) * linear_hash->bucket_map->current_size);
++	memset(linear_hash->bucket_map->data, 0, sizeof(ion_fpos_t) * linear_hash->bucket_map->current_size);
++
++
++	if (1 != fread(linear_hash->bucket_map->data, sizeof(ion_fpos_t) * linear_hash->num_buckets, 1, linear_hash->state))
++	{
+ 		return err_file_read_error;
+ 	}
+ 
+@@ -1165,7 +1169,9 @@ linear_hash_get_bucket(
+ 	linear_hash_bucket_t	*bucket,
+ 	linear_hash_table_t		*linear_hash
+ ) {
+-	if (bucket_loc == -1) {}
++	if (bucket_loc == linear_hash_end_of_list) {
++		return err_item_not_found;
++	}
+ 
+ 	/* check if file is open */
+ 	if (!linear_hash->database) {
+@@ -1466,8 +1472,8 @@ ion_err_t
+ linear_hash_close(
+ 	linear_hash_table_t *linear_hash
+ ) {
++	linear_hash_write_state(linear_hash);
+ 	if (0 != fclose(linear_hash->state)) {
+-		linear_hash_write_state(linear_hash);
+ 		return err_file_close_error;
+ 	}
+ 
+diff --git a/src/dictionary/linear_hash/linear_hash_handler.c b/src/dictionary/linear_hash/linear_hash_handler.c
+index 1765e3f8..4b7e339e 100644
+--- a/src/dictionary/linear_hash/linear_hash_handler.c
++++ b/src/dictionary/linear_hash/linear_hash_handler.c
+@@ -47,7 +47,7 @@ linear_hash_dict_init(
+ 	handler->delete_dictionary	= linear_hash_delete_dictionary;
+ 	handler->destroy_dictionary = linear_hash_destroy_dictionary;
+ 	handler->update				= linear_hash_dict_update;
+-	/* handler->find				= linear_hash_dict_find; */
++	handler->find				= linear_hash_dict_find;
+ 	handler->close_dictionary	= linear_hash_close_dictionary;
+ 	handler->open_dictionary	= linear_hash_open_dictionary;
+ }
+@@ -183,13 +183,17 @@ linear_hash_close_dictionary(
+ 	return err_ok;
+ }
+ 
+-ion_status_t
++ion_err_t
+ linear_hash_dict_find(
+-	ion_dictionary_t *dictionary
++	ion_dictionary_t *dictionary,
++	ion_predicate_t *predicate,
++	ion_dict_cursor_t **cursor
+ ) {
+ 	ion_status_t status = ION_STATUS_INITIALIZE;
+ 
+ 	UNUSED(dictionary);
++	UNUSED(predicate);
++	UNUSED(cursor);
+ 	status.error = err_not_implemented;
+-	return status;
+-}
++	return status.error;
++}
+\ No newline at end of file
+diff --git a/src/dictionary/linear_hash/linear_hash_handler.h b/src/dictionary/linear_hash/linear_hash_handler.h
+index c6a66d0c..4e8521d9 100644
+--- a/src/dictionary/linear_hash/linear_hash_handler.h
++++ b/src/dictionary/linear_hash/linear_hash_handler.h
+@@ -193,9 +193,11 @@ linear_hash_dict_update(
+ 	ion_value_t			value
+ );
+ 
+-ion_status_t
++ion_err_t
+ linear_hash_dict_find(
+-	ion_dictionary_t *dictionary
++	ion_dictionary_t *dictionary,
++	ion_predicate_t		*predicate,
++	ion_dict_cursor_t	**cursor
+ );
+ 
+ #if defined(__cplusplus)
+diff --git a/src/dictionary/linear_hash/linear_hash_types.h b/src/dictionary/linear_hash/linear_hash_types.h
+index d7ce29d0..97ec6315 100644
+--- a/src/dictionary/linear_hash/linear_hash_types.h
++++ b/src/dictionary/linear_hash/linear_hash_types.h
+@@ -38,6 +38,7 @@
+ #include "../../key_value/kv_system.h"
+ #include "../dictionary.h"
+ #include "../../file/sd_stdio_c_iface.h"
++#include "vfs_stdio_c_iface.h"
+ 
+ typedef ion_byte_t *linear_hash_record_status_t;
+ 
+diff --git a/src/dictionary/open_address_file_hash/open_address_file_hash.c b/src/dictionary/open_address_file_hash/open_address_file_hash.c
+index 73eab45a..98045162 100644
+--- a/src/dictionary/open_address_file_hash/open_address_file_hash.c
++++ b/src/dictionary/open_address_file_hash/open_address_file_hash.c
+@@ -103,15 +103,16 @@ oafh_initialize(
+ 	int record_size = SIZEOF(STATUS) + hashmap->super.record.key_size + hashmap->super.record.value_size;
+ 
+ 	file_record			= calloc(record_size, 1);
+-	file_record->status = ION_EMPTY;
++	file_record->status = (char) ION_EMPTY;
+ 
+ 	/* write out the records to disk to prep */
+-#if ION_DEBUG
+-	printf("Initializing hash table\n");
++
++#if ION_OAF_DEBUG
++	DUMP("Initializing hash table\n", "%s");
+ #endif
+ 
+ 	int i, writes = 0;
+-
++	fseek(hashmap->file, 0, SEEK_SET);
+ 	for (i = 0; i < hashmap->map_size; i++) {
+ 		writes	+= fwrite(&file_record->status, SIZEOF(STATUS), 1, hashmap->file);
+ 		writes	+= fwrite(file_record->data, record_size - SIZEOF(STATUS), 1, hashmap->file);
+@@ -206,11 +207,11 @@ oafh_insert(
+ 
+ 	while (count != hash_map->map_size) {
+ 		fread(item, record_size, 1, hash_map->file);
+-#if ION_DEBUG
++#if ION_OAF_DEBUG
+ 		DUMP((int) ftell(hash_map->file), "%i");
++		DUMP(item->status, "%i");
+ #endif
+-
+-		if (item->status == ION_IN_USE) {
++		if (item->status == (char) ION_IN_USE) {
+ 			/* if a cell is in use, need to key to */
+ 
+ 			if (hash_map->super.compare(item->data, key, hash_map->super.record.key_size) == ION_IS_EQUAL) {
+@@ -223,9 +224,9 @@ oafh_insert(
+ 					/* allows for values to be updated											// */
+ 					/* backup and write */
+ 					fseek(hash_map->file, SIZEOF(STATUS) + hash_map->super.record.key_size - record_size, SEEK_CUR);
+-#if ION_DEBUG
++#if ION_OAF_DEBUG
+ 					DUMP((int) ftell(hash_map->file), "%i");
+-					DUMP(value, "%s");
++					//DUMP(value, "%s");
+ #endif
+ 					fwrite(value, hash_map->super.record.value_size, 1, hash_map->file);
+ 					free(item);
+@@ -236,15 +237,19 @@ oafh_insert(
+ 					return ION_STATUS_ERROR(err_file_write_error);	/* there is a configuration issue with write concern */
+ 				}
+ 			}
++#if ION_OAF_DEBUG
++			DUMP("ION IN USE, NOT EQUAL", "%s");
++#endif
+ 		}
+-		else if ((item->status == ION_EMPTY) || (item->status == ION_DELETED)) {
++		else if ((item->status == (char) ION_EMPTY) || (item->status == (char) ION_DELETED)) {
+ 			/* problem is here with base types as it is just an array of data.  Need better way */
+ 			/* printf("empty\n"); */
+ 			fseek(hash_map->file, -record_size, SEEK_CUR);
+-#if ION_DEBUG
++#if ION_OAF_DEBUG
++			DUMP("ION INSERT DONE", "%s");
+ 			DUMP((int) ftell(hash_map->file), "%i");
+ #endif
+-			item->status = ION_IN_USE;
++			item->status = (char) ION_IN_USE;
+ 			memcpy(item->data, key, (hash_map->super.record.key_size));
+ 			memcpy(item->data + hash_map->super.record.key_size, value, (hash_map->super.record.value_size));
+ 			fwrite(item, record_size, 1, hash_map->file);
+@@ -262,13 +267,13 @@ oafh_insert(
+ 			frewind(hash_map->file);
+ 		}
+ 
+-#if ION_DEBUG
+-		printf("checking location %i\n", loc);
++#if ION_OAF_DEBUG
++		DUMP(loc, "%d");
+ #endif
+ 		count++;
+ 	}
+ 
+-#if ION_DEBUG
++#if ION_OAF_DEBUG
+ 	printf("Hash table full.  Insert not done");
+ #endif
+ 	free(item);
+@@ -303,14 +308,14 @@ oafh_find_item_loc(
+ 		fread(&item->status, SIZEOF(STATUS), 1, hash_map->file);
+ 		fread(item->data, record_size - SIZEOF(STATUS), 1, hash_map->file);
+ 
+-		if (item->status == ION_EMPTY) {
++		if (item->status == (char) ION_EMPTY) {
+ 			free(item);
+ 			return err_item_not_found;	/* if you hit an empty cell, exit */
+ 		}
+ 		else {
+ 			/* calculate if there is a match */
+ 
+-			if (item->status != ION_DELETED) {
++			if (item->status != (char) ION_DELETED) {
+ 				int key_is_equal = hash_map->super.compare(item->data, key, hash_map->super.record.key_size);
+ 
+ 				if (ION_IS_EQUAL == key_is_equal) {
+@@ -343,7 +348,7 @@ oafh_delete(
+ 	int loc;
+ 
+ 	if (oafh_find_item_loc(hash_map, key, &loc) == err_item_not_found) {
+-#if ION_DEBUG
++#if ION_OAF_DEBUG
+ 		printf("Item not found when trying to oah_delete.\n");
+ #endif
+ 		return ION_STATUS_ERROR(err_item_not_found);
+@@ -362,7 +367,7 @@ oafh_delete(
+ 		fread(&item->status, SIZEOF(STATUS), 1, hash_map->file);
+ 		fread(item->data, record_size - SIZEOF(STATUS), 1, hash_map->file);
+ 
+-		item->status = ION_DELETED;	/* delete item */
++		item->status = (char) ION_DELETED;	/* delete item */
+ 
+ 		/* backup */
+ 		fseek(hash_map->file, -record_size, SEEK_CUR);
+@@ -370,7 +375,7 @@ oafh_delete(
+ 		fwrite(item->data, record_size - SIZEOF(STATUS), 1, hash_map->file);
+ 
+ 		free(item);
+-#if ION_DEBUG
++#if ION_OAF_DEBUG
+ 		printf("Item deleted at location %d\n", loc);
+ #endif
+ 		return ION_STATUS_OK(1);
+@@ -386,7 +391,7 @@ oafh_get(
+ 	int loc;
+ 
+ 	if (oafh_find_item_loc(hash_map, key, &loc) == err_ok) {
+-#if ION_DEBUG
++#if ION_OAF_DEBUG
+ 		printf("Item found at location %d\n", loc);
+ #endif
+ 
+@@ -394,7 +399,7 @@ oafh_get(
+ 
+ 		/* set file position */
+ 		fseek(hash_map->file, (loc * record_size) + SIZEOF(STATUS) + hash_map->super.record.key_size, SEEK_SET);
+-#if ION_DEBUG
++#if ION_OAF_DEBUG
+ 		printf("seeking %i\n", (loc * record_size) + SIZEOF(STATUS) + hash_map->super.record.key_size);
+ #endif
+ 		fread(value, hash_map->super.record.value_size, 1, hash_map->file);
+@@ -402,7 +407,7 @@ oafh_get(
+ 		return ION_STATUS_OK(1);
+ 	}
+ 	else {
+-#if ION_DEBUG
++#if ION_OAF_DEBUG
+ 		printf("Item not found in hash table.\n");
+ #endif
+ 		value = NULL;	/*et the number of bytes to 0 */
+diff --git a/src/dictionary/open_address_file_hash/open_address_file_hash.h b/src/dictionary/open_address_file_hash/open_address_file_hash.h
+index 6638ac29..5b2d9366 100644
+--- a/src/dictionary/open_address_file_hash/open_address_file_hash.h
++++ b/src/dictionary/open_address_file_hash/open_address_file_hash.h
+@@ -52,12 +52,18 @@ extern "C" {
+ 
+ /*edefines file operations for arduino */
+ #include "../../file/sd_stdio_c_iface.h"
++#include "vfs_stdio_c_iface.h"
++
+ 
+ #define ION_EMPTY	-1
+ #define ION_DELETED -2
+ #define ION_IN_USE	-3
+ #define SIZEOF(STATUS) 1
+ 
++#if ION_DEBUG
++#define ION_OAF_DEBUG 0
++#endif
++
+ /**
+ @brief		Prototype declaration for hashmap
+ */
+diff --git a/src/dictionary/open_address_file_hash/open_address_file_hash_dictionary_handler.c b/src/dictionary/open_address_file_hash/open_address_file_hash_dictionary_handler.c
+index 503f5f32..9ab19226 100644
+--- a/src/dictionary/open_address_file_hash/open_address_file_hash_dictionary_handler.c
++++ b/src/dictionary/open_address_file_hash/open_address_file_hash_dictionary_handler.c
+@@ -91,6 +91,11 @@ oafdict_scan(
+ 	/* need to scan hashmap fully looking for values that satisfy - need to think about */
+ 	ion_file_hashmap_t *hash_map	= (ion_file_hashmap_t *) (cursor->super.dictionary->instance);
+ 
++	/* To prevent looping again after special case has been handled */
++	if (cursor->current == cursor->first && cursor->first == (hash_map->map_size) - 1) {
++		return cs_end_of_results;
++	}
++
+ 	int loc							= (cursor->current + 1) % hash_map->map_size;
+ 	/* this is the current position of the cursor */
+ 	/* and start scanning 1 ahead */
+@@ -108,13 +113,13 @@ oafdict_scan(
+ 	while (loc != cursor->first) {
+ 		fread(item, record_size, 1, hash_map->file);
+ 
+-		if ((item->status == ION_EMPTY) || (item->status == ION_DELETED)) {
++		if ((item->status == (char) ION_EMPTY) || (item->status == (char) ION_DELETED)) {
+ 			/* if empty, just skip to next cell */
+ 			loc++;
+ 		}
+ 		else {
+ 			/* check to see if the current key value satisfies the predicate */
+-
++			
+ 			ion_boolean_t key_satisfies_predicate = test_predicate(&(cursor->super), item->data);	/* assumes that the key is first */
+ 
+ 			if (key_satisfies_predicate == boolean_true) {
+@@ -133,6 +138,30 @@ oafdict_scan(
+ 		}
+ 	}
+ 
++	/* Handle special case of last value of range and all records predicate */
++	if (loc == cursor->first && cursor->first == (hash_map->map_size) - 1) {
++		#if ION_OAF_DEBUG
++		printf("SPECIAL CASE \n");
++		#endif
++		fread(item, record_size, 1, hash_map->file);
++
++		if ((item->status == (char) ION_EMPTY) || (item->status == (char) ION_DELETED)) {
++			/* if empty, nothing and end of results */
++		}
++		else {
++			/* check to see if the current key value satisfies the predicate */
++			ion_boolean_t key_satisfies_predicate = test_predicate(&(cursor->super), item->data);	/* assumes that the key is first */
++
++			if (key_satisfies_predicate == boolean_true) {
++				cursor->current = loc;	/* this is the next index for value */
++				free(item);
++				return cs_cursor_active;
++			}
++
++			/* If valid bucket is not found end of results */
++		}
++	}
++
+ 	/* if you end up here, you've wrapped the entire data structure and not found a value */
+ 	free(item);
+ 	return cs_end_of_results;
+@@ -301,9 +330,25 @@ oafdict_find(
+ 
+ 			/* copy across the key value as the predicate may be destroyed */
+ 			memcpy((*cursor)->predicate->statement.range.upper_bound, predicate->statement.range.upper_bound, (((ion_file_hashmap_t *) dictionary->instance)->super.record.key_size));
++
++			/* To prevent implicit fallthrough copy of predicate_all_records*/ 
++			ion_oafdict_cursor_t	*oafdict_cursor = (ion_oafdict_cursor_t *) (*cursor);
++			ion_file_hashmap_t		*hash_map		= ((ion_file_hashmap_t *) dictionary->instance);
++
++			(*cursor)->status		= cs_cursor_initialized;
++			oafdict_cursor->first	= (hash_map->map_size) - 1;
++			oafdict_cursor->current = -1;
++
++			ion_err_t err = oafdict_scan(oafdict_cursor);
++
++			if (cs_end_of_results == err) {
++				(*cursor)->status = cs_end_of_results;
++			}
++
++			return err_ok;
++			break;
+ 		}
+ 
+-		/* Range query will intentionally continue to all record code to get rid of duplicate statements. */
+ 		case predicate_all_records: {
+ 			ion_oafdict_cursor_t	*oafdict_cursor = (ion_oafdict_cursor_t *) (*cursor);
+ 			ion_file_hashmap_t		*hash_map		= ((ion_file_hashmap_t *) dictionary->instance);
+@@ -434,13 +479,14 @@ oafdict_create_dictionary(
+ 	dictionary->instance->type		= dictionary_type_open_address_file_hash_t;
+ 
+ 	/* this registers the dictionary the dictionary */
+-	oafh_initialize((ion_file_hashmap_t *) dictionary->instance, oafh_compute_simple_hash, key_type, key_size, value_size, dictionary_size, id);/* just pick an arbitary size for testing atm */
++	// check the error
++	ion_err_t error = oafh_initialize((ion_file_hashmap_t *) dictionary->instance, oafh_compute_simple_hash, key_type, key_size, value_size, dictionary_size, id);/* just pick an arbitary size for testing atm */
+ 
+ 	/*TODO The correct comparison operator needs to be bound at run time
+ 	 * based on the type of key defined
+ 	*/
+-
+-	if (NULL == handler) {
++	
++	if (NULL == handler || error != err_ok) {
+ 		return err_uninitialized;
+ 	}
+ 
+diff --git a/src/dictionary/open_address_file_hash/open_address_file_hash_dictionary_handler.h b/src/dictionary/open_address_file_hash/open_address_file_hash_dictionary_handler.h
+index 74ae39c6..f1bc3e47 100644
+--- a/src/dictionary/open_address_file_hash/open_address_file_hash_dictionary_handler.h
++++ b/src/dictionary/open_address_file_hash/open_address_file_hash_dictionary_handler.h
+@@ -49,6 +49,7 @@ extern "C" {
+ 
+ /*edefines file operations for arduino */
+ #include "../../file/sd_stdio_c_iface.h"
++#include "vfs_stdio_c_iface.h"
+ 
+ /**
+ @brief Struct used to for instance of a given dictionary.
+diff --git a/src/dictionary/open_address_hash/open_address_hash.c b/src/dictionary/open_address_hash/open_address_hash.c
+index 6dcdcfb8..52edbeec 100644
+--- a/src/dictionary/open_address_hash/open_address_hash.c
++++ b/src/dictionary/open_address_hash/open_address_hash.c
+@@ -70,13 +70,13 @@ oah_initialize(
+ 		return 1;
+ 	}
+ 
+-#if ION_DEBUG
++#if ION_OAH_DEBUG
+ 	printf("Initializing hash table\n");
+ #endif
+ 
+ 	/* Initialize hash table */
+ 	for (i = 0; i < size; i++) {
+-		((ion_hash_bucket_t *) (hashmap->entry + ((hashmap->super.record.key_size + hashmap->super.record.value_size + SIZEOF(STATUS)) * i)))->status = ION_EMPTY;
++		((ion_hash_bucket_t *) (hashmap->entry + ((hashmap->super.record.key_size + hashmap->super.record.value_size + SIZEOF(STATUS)) * i)))->status = (char) ION_EMPTY;
+ 	}
+ 
+ 	return 0;
+@@ -144,7 +144,7 @@ oah_insert(
+ 	while (count != hash_map->map_size) {
+ 		item = ((ion_hash_bucket_t *) ((hash_map->entry + (hash_map->super.record.key_size + hash_map->super.record.value_size + SIZEOF(STATUS)) * loc)));
+ 
+-		if (item->status == ION_IN_USE) {
++		if (item->status == (char) ION_IN_USE) {
+ 			/* if a cell is in use, need to key to */
+ 
+ 			if (hash_map->super.compare(item->data, key, hash_map->super.record.key_size) == ION_IS_EQUAL) {
+@@ -162,9 +162,9 @@ oah_insert(
+ 				}
+ 			}
+ 		}
+-		else if ((item->status == ION_EMPTY) || (item->status == ION_DELETED)) {
++		else if ((item->status == (char) ION_EMPTY) || (item->status == (char) ION_DELETED)) {
+ 			/* problem is here with base types as it is just an array of data.  Need better way */
+-			item->status = ION_IN_USE;
++			item->status = (char) ION_IN_USE;
+ 			memcpy(item->data, key, (hash_map->super.record.key_size));
+ 			memcpy(item->data + hash_map->super.record.key_size, value, (hash_map->super.record.value_size));
+ 			return ION_STATUS_OK(1);
+@@ -177,13 +177,13 @@ oah_insert(
+ 			loc = 0;
+ 		}
+ 
+-#if ION_DEBUG
++#if ION_OAH_DEBUG
+ 		printf("checking location %i\n", loc);
+ #endif
+ 		count++;
+ 	}
+ 
+-#if ION_DEBUG
++#if ION_OAH_DEBUG
+ 	printf("Hash table full.  Insert not done");
+ #endif
+ 
+@@ -209,13 +209,13 @@ oah_find_item_loc(
+ 		/* locate first item */
+ 		ion_hash_bucket_t *item = (((ion_hash_bucket_t *) ((hash_map->entry + (hash_map->super.record.key_size + hash_map->super.record.value_size + SIZEOF(STATUS)) * loc))));
+ 
+-		if (item->status == ION_EMPTY) {
++		if (item->status == (char) ION_EMPTY) {
+ 			return err_item_not_found;	/* if you hit an empty cell, exit */
+ 		}
+ 		else {
+ 			/* calculate if there is a match */
+ 
+-			if (item->status != ION_DELETED) {
++			if (item->status != (char) ION_DELETED) {
+ 				int key_is_equal = hash_map->super.compare(item->data, key, hash_map->super.record.key_size);
+ 
+ 				if (ION_IS_EQUAL == key_is_equal) {
+@@ -245,7 +245,7 @@ oah_delete(
+ 	int loc = -1;
+ 
+ 	if (oah_find_item_loc(hash_map, key, &loc) == err_item_not_found) {
+-#if ION_DEBUG
++#if ION_OAH_DEBUG
+ 		printf("Item not found when trying to oah_delete.\n");
+ #endif
+ 		return ION_STATUS_ERROR(err_item_not_found);
+@@ -254,9 +254,9 @@ oah_delete(
+ 		/* locate item */
+ 		ion_hash_bucket_t *item = (((ion_hash_bucket_t *) ((hash_map->entry + (hash_map->super.record.key_size + hash_map->super.record.value_size + SIZEOF(STATUS)) * loc))));
+ 
+-		item->status = ION_DELETED;	/* delete item */
++		item->status = (char) ION_DELETED;	/* delete item */
+ 
+-#if ION_DEBUG
++#if ION_OAH_DEBUG
+ 		printf("Item deleted at location %d\n", loc);
+ #endif
+ 		return ION_STATUS_OK(1);
+@@ -272,7 +272,7 @@ oah_get(
+ 	int loc;
+ 
+ 	if (oah_find_item_loc(hash_map, key, &loc) == err_ok) {
+-#if ION_DEBUG
++#if ION_OAH_DEBUG
+ 		printf("Item found at location %d\n", loc);
+ #endif
+ 
+@@ -284,7 +284,7 @@ oah_get(
+ 		return ION_STATUS_OK(1);
+ 	}
+ 	else {
+-#if ION_DEBUG
++#if ION_OAH_DEBUG
+ 		printf("Item not found in hash table.\n");
+ #endif
+ 		return ION_STATUS_ERROR(err_item_not_found);
+@@ -317,7 +317,7 @@ oah_print(
+ 	for (i = 0; i < size; i++) {
+ 		printf("%d -- %i ", i, ((ion_hash_bucket_t *) ((hash_map->entry + (record->key_size + record->value_size + SIZEOF(STATUS)) * i)))->status);
+ 		{
+-			if (((ion_hash_bucket_t *) ((hash_map->entry + (record->key_size + record->value_size + SIZEOF(STATUS)) * i)))->status == (ION_EMPTY | ION_DELETED)) {
++			if (((ion_hash_bucket_t *) ((hash_map->entry + (record->key_size + record->value_size + SIZEOF(STATUS)) * i)))->status == ((char) ION_EMPTY | (char) ION_DELETED)) {
+ 				printf("(null)");
+ 			}
+ 			else {
+diff --git a/src/dictionary/open_address_hash/open_address_hash.h b/src/dictionary/open_address_hash/open_address_hash.h
+index ee665dd2..e6c5ae62 100644
+--- a/src/dictionary/open_address_hash/open_address_hash.h
++++ b/src/dictionary/open_address_hash/open_address_hash.h
+@@ -59,6 +59,10 @@ extern "C" {
+ #define ION_IN_USE	-3
+ #define SIZEOF(STATUS) 1
+ 
++#if ION_DEBUG
++#define ION_OAH_DEBUG 0
++#endif
++
+ /**
+ @brief		Prototype declaration for hashmap
+ */
+diff --git a/src/dictionary/open_address_hash/open_address_hash_dictionary_handler.c b/src/dictionary/open_address_hash/open_address_hash_dictionary_handler.c
+index 3be92690..e12a832c 100644
+--- a/src/dictionary/open_address_hash/open_address_hash_dictionary_handler.c
++++ b/src/dictionary/open_address_hash/open_address_hash_dictionary_handler.c
+@@ -89,6 +89,11 @@ oadict_scan(
+ 	/* need to scan hashmap fully looking for values that satisfy - need to think about */
+ 	ion_hashmap_t *hash_map = (ion_hashmap_t *) (cursor->super.dictionary->instance);
+ 
++	/* Handle special case to prevent looping */
++	if (cursor->current == cursor->first && cursor->first == (hash_map->map_size) - 1) {
++		return cs_end_of_results;
++	}
++
+ 	int loc					= (cursor->current + 1) % hash_map->map_size;
+ 
+ 	/* this is the current position of the cursor */
+@@ -100,7 +105,7 @@ oadict_scan(
+ 		/* locate first item */
+ 		ion_hash_bucket_t *item = (((ion_hash_bucket_t *) ((hash_map->entry + (hash_map->super.record.key_size + hash_map->super.record.value_size + SIZEOF(STATUS)) * loc))));
+ 
+-		if ((item->status == ION_EMPTY) || (item->status == ION_DELETED)) {
++		if ((item->status == (char) ION_EMPTY) || (item->status == (char) ION_DELETED)) {
+ 			/* if empty, just skip to next cell */
+ 			loc++;
+ 		}
+@@ -124,6 +129,29 @@ oadict_scan(
+ 		}
+ 	}
+ 
++	/* handle specia case for range and all records predicate */
++	if (loc == cursor->first && cursor->first == (hash_map->map_size) - 1) {
++		/* check to see if current item is a match based on key */
++		/* locate first item */
++		ion_hash_bucket_t *item = (((ion_hash_bucket_t *) ((hash_map->entry + (hash_map->super.record.key_size + hash_map->super.record.value_size + SIZEOF(STATUS)) * loc))));
++
++		if ((item->status == (char) ION_EMPTY) || (item->status == (char) ION_DELETED)) {
++			/* if empty, just cs_end_of_results */
++		}
++		else {
++			/* check to see if the current key value satisfies the predicate */
++
++			ion_boolean_t key_satisfies_predicate = test_predicate(&(cursor->super), item->data);	/* assumes that the key is first */
++
++			if (key_satisfies_predicate == boolean_true) {
++				cursor->current = loc;	/* this is the next index for value */
++				return cs_cursor_active;
++			}
++
++			/* If valid bucket is not found, cs_end_of_results */
++		}
++	}
++
+ 	/* if you end up here, you've wrapped the entire data structure and not found a value */
+ 	return cs_end_of_results;
+ }
+diff --git a/src/dictionary/skip_list/skip_list.c b/src/dictionary/skip_list/skip_list.c
+index 2e8ed8ae..20f5be1e 100644
+--- a/src/dictionary/skip_list/skip_list.c
++++ b/src/dictionary/skip_list/skip_list.c
+@@ -57,15 +57,6 @@ sl_initialize(
+ 	skiplist->pden						= pden;
+ 	skiplist->pnum						= pnum;
+ 
+-#if ION_DEBUG
+-	DUMP(skip_list->super.record.key_size, "%d");
+-	DUMP(skip_list->super.record.value_size, "%d");
+-	DUMP(skip_list->maxheight, "%d");
+-	DUMP(skip_list->pnum, "%d");
+-	DUMP(skip_list->pden, "%d");
+-	printf("%s", "\n");
+-#endif
+-
+ 	skiplist->head = malloc(sizeof(ion_sl_node_t));
+ 
+ 	if (NULL == skiplist->head) {
+diff --git a/src/file/ion_file.c b/src/file/ion_file.c
+index 3ff89f47..9afb9309 100644
+--- a/src/file/ion_file.c
++++ b/src/file/ion_file.c
+@@ -40,8 +40,9 @@ ion_boolean_t
+ ion_fexists(
+ 	char *name
+ ) {
+-#if defined(ARDUINO)
++#if defined(ARDUINO) || defined(VFS)
+ 	return (ion_boolean_t) SD_File_Exists(name);
++
+ #else
+ 	return -1 != access(name, F_OK);
+ #endif
+@@ -134,6 +135,7 @@ ion_ftell(
+ ) {
+ #if defined(ARDUINO)
+ 	return ftell(file.file);
++
+ #else
+ 	return ftell(file);
+ #endif
+diff --git a/src/file/ion_file.h b/src/file/ion_file.h
+index f1afd93e..07e026c1 100644
+--- a/src/file/ion_file.h
++++ b/src/file/ion_file.h
+@@ -35,6 +35,7 @@
+ */
+ /******************************************************************************/
+ 
++
+ #if !defined(ION_FILE_H_)
+ #define ION_FILE_H_
+ 
+@@ -49,7 +50,7 @@ typedef long ion_file_offset_t;
+ #define ION_FILE_START	SEEK_SET
+ #define ION_FILE_END	SEEK_END
+ 
+-#if defined(ARDUINO)
++#if defined(ARDUINO) /* Clause ARDUINO */
+ 
+ #include "sd_stdio_c_iface.h"
+ 
+@@ -61,7 +62,17 @@ typedef struct file_handle {
+ 	SD_FILE *file;
+ } ion_file_handle_t;
+ 
+-#else /* Clause ARDUINO */
++#elif defined(VFS) /* Clause VFS */
++
++#include "vfs_stdio_c_iface.h"
++
++#define ION_NOFILE \
++	((ion_file_handle_t) { NULL } \
++	)
++
++typedef VFS_FILE *ion_file_handle_t;
++
++#else 
+ 
+ #include "stdio.h"
+ #include "unistd.h"
+@@ -70,7 +81,7 @@ typedef FILE *ion_file_handle_t;
+ 
+ #define ION_NOFILE ((ion_file_handle_t) (NULL))
+ 
+-#endif /* Clause ARDUINO */
++#endif /* End clause VFS */
+ 
+ #define ION_FILE_NULL -1
+ 
+diff --git a/src/file/kv_stdio_intercept.h b/src/file/kv_stdio_intercept.h
+index d035d79b..c780947e 100644
+--- a/src/file/kv_stdio_intercept.h
++++ b/src/file/kv_stdio_intercept.h
+@@ -72,6 +72,33 @@ extern "C" {
+ }
+ #endif
+ 
+-#endif /* Clause ARDUINO */
++#elif defined(VFS) /* Clause ARDUINO */
++
++#if defined(__cplusplus)
++extern "C" {
++#endif
++
++#define  ION_FILE VFS_FILE
++#define  fopen(x, y)		ion_vfs_fopen(x, y)
++#define  fclose(x)			ion_vfs_fclose(x)
++#define  fwrite(w, x, y, z) ion_vfs_fwrite(w, x, y, z)
++#define  fsetpos(x, y)		ion_vfs_fsetpos(x, y)
++#define  fgetpos(x, y)		ion_vfs_fgetpos(x, y)
++#define  fflush(x)			ion_vfs_fflush(x)
++#define  fseek(x, y, z)		ion_vfs_fseek(x, y, z)
++#define  fread(w, x, y, z)	ion_vfs_fread(w, x, y, z)
++#define  feof(x)			ion_vfs_feof(x)
++#define  ftell(x)			ion_vfs_ftell(x)
++#define  fremove(x)			ion_vfs_remove(x)
++#define  frewind(x)			ion_vfs_rewind(x)
++//#define  fdeleteall()		ION_VFS_File_Delete_All()
++#define	 SD_File_Exists(x)	ION_VFS_File_Exists(x)	
++#if defined(__cplusplus)
++}
++#endif
++
++#define FILE ION_FILE
++
++#endif /* Clause VFS */
+ 
+ #endif /* KV_STDIO_INTERCEPT_H_ */
+diff --git a/src/key_value/kv_system.h b/src/key_value/kv_system.h
+index 78d59891..3949d94c 100644
+--- a/src/key_value/kv_system.h
++++ b/src/key_value/kv_system.h
+@@ -41,7 +41,10 @@
+ extern "C" {
+ #endif
+ 
++
++
+ #include <stdio.h>
++
+ #include <stdlib.h>
+ #include <string.h>
+ #include <stdint.h>
+@@ -51,29 +54,37 @@ extern "C" {
+ #include <alloca.h>
+ #endif
+ 
+-/* Only on PC */
+-#if !defined(ARDUINO)
+-#define fremove(x)	remove(x)
+-#define frewind(x)	rewind(x)
+-#define fdeleteall()
+-#endif
++/** To use the vfs file interface*/
++#define ION_USING_VFS			1
+ 
+ #define ION_USING_MASTER_TABLE	1
+ #define ION_USING_ECLIPSE		0
+-#define ION_DEBUG				0
++#define ION_DEBUG				1
+ #define ION_IS_EQUAL			0
+ #define ION_IS_GREATER			1
+ #define ION_IS_LESS				-1
+ #define ION_ZERO				0
+ #define ION_RETURN_VALUE		0x73/* Magic default return value to be easy to spot */
+ 
++/* Only on PC */
++#if !defined(ARDUINO) && !defined(ION_USING_VFS)
++#define fremove(x)	remove(x)
++#define frewind(x)	rewind(x)
++#define fdeleteall()
++#endif
++
+ /**
+ @brief		Since the arduino conforms to 8.3 syntax, that's 8 + 3 = 11 + 1 (null terminator) characters.
+ */
++#if !defined(ION_USING_VFS)
+ #define ION_MAX_FILENAME_LENGTH 12
++#else
++/* To be conform with VFS. */
++#define ION_MAX_FILENAME_LENGTH VFS_NAME_MAX
++#endif
+ 
+ /* ==================== ARDUINO CONDITIONAL COMPILATION ================================ */
+-#if !defined(ARDUINO)
++#if !defined(ARDUINO) && !defined(ION_USING_VFS)
+ /* Only if we're on desktop do we want to flush. Otherwise we only do a printf. */
+ #define DUMP(varname, format)	printf("Variable %s = " format "\n", # varname, varname);fflush(stdout)
+ #define PANIC(stuff)			printf("\t\t%s\n", stuff);fflush(stdout)
+@@ -82,6 +93,17 @@ extern "C" {
+ #define PANIC(stuff)			printf("\t\t%s\n", stuff)
+ #endif /* Clause ARDUINO */
+ 
++/* ==================== VFS CONDITIONAL COMPILATION ================================ */
++
++#if ION_USING_VFS
++#define VFS
++
++/* Should be uppercase*/ 
++#define MNT_PATH_VFS "/"
++#define MNT_PATH_LENGTH sizeof(MNT_PATH_VFS)
++#endif
++
++
+ /* ==================== PC CONDITIONAL COMPILATION ===================================== */
+ #if !defined(ARDUINO)
+ 
+-- 
+2.30.2
+

@@ -1,0 +1,6 @@
+MODULE := iondb-dictionary
+
+SRC += ion_master_table.c
+SRC += dictionary.c
+
+include $(RIOTBASE)/Makefile.base

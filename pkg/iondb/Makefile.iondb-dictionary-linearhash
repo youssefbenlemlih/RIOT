@@ -1,0 +1,6 @@
+MODULE := iondb-dictionary-linearhash
+
+SRC += linear_hash.c
+SRC += linear_hash_handler.c
+
+include $(RIOTBASE)/Makefile.base

@@ -1,0 +1,33 @@
+# Used to avoid a warning/error 
+# of "dereferencing type-punned pointer will break strict-aliasing rules"
+# when using NEUTRALIZE
+CFLAGS += -Wno-strict-aliasing
+
+INCLUDES += -I$(RIOTPKG)/iondb/include
+DIRS += $(RIOTPKG)/iondb/contrib
+
+INCLUDES += -I$(PKGDIRBASE)/iondb/src/file
+INCLUDES += -I$(PKGDIRBASE)/iondb/src/key_value
+INCLUDES += -I$(PKGDIRBASE)/iondb/src/dictionary
+
+INCLUDES += -I$(PKGDIRBASE)/iondb/src/dictionary/flat_file
+
+ifneq (,$(filter iondb-dictionary-openaddressfilehash,$(USEMODULE)))
+    INCLUDES += -I$(PKGDIRBASE)/iondb/src/dictionary/open_address_file_hash
+endif
+
+ifneq (,$(filter iondb-dictionary-openaddresshash,$(USEMODULE)))
+    INCLUDES += -I$(PKGDIRBASE)/iondb/src/dictionary/open_address_hash
+endif
+
+ifneq (,$(filter iondb-dictionary-skiplist,$(USEMODULE)))
+    INCLUDES += -I$(PKGDIRBASE)/iondb/src/dictionary/skip_list
+endif
+
+ifneq (,$(filter iondb-dictionary-linearhash,$(USEMODULE)))
+    INCLUDES += -I$(PKGDIRBASE)/iondb/src/dictionary/linear_hash
+endif
+
+ifneq (,$(filter iondb-dictionary-bpptree,$(USEMODULE)))
+    INCLUDES += -I$(PKGDIRBASE)/iondb/src/dictionary/bpp_tree
+endif

@@ -1,0 +1,6 @@
+MODULE := iondb-dictionary-flatfile
+
+SRC += flat_file.c
+SRC += flat_file_dictionary_handler.c
+
+include $(RIOTBASE)/Makefile.base

@@ -1,0 +1,6 @@
+MODULE := iondb-dictionary-bpptree
+
+    SRC += bpp_tree.c
+    SRC += bpp_tree_handler.c
+
+include $(RIOTBASE)/Makefile.base

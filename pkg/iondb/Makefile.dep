@@ -1,0 +1,8 @@
+USEMODULE += vfs
+
+USEMODULE += iondb-contrib
+USEMODULE += iondb-file
+USEMODULE += iondb-dictionary
+
+# Flat File has to be the minimum because of dictionary.c
+USEMODULE += iondb-dictionary-flatfile

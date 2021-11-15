@@ -1,0 +1,6 @@
+MODULE := iondb-dictionary-skiplist
+
+SRC += skip_list_handler.c
+SRC += skip_list.c
+
+include $(RIOTBASE)/Makefile.base
