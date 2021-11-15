@@ -1,6 +1,6 @@
-From fc742a0aff817812a393e69e61747dfee751eb58 Mon Sep 17 00:00:00 2001
+From 467e0ecd562234d33de4e02e2aef14f4407b3c18 Mon Sep 17 00:00:00 2001
 From: aco401 <tobias.westphal@haw-hamburg.de>
-Date: Fri, 22 Oct 2021 14:30:52 +0200
+Date: Mon, 15 Nov 2021 19:15:37 +0100
 Subject: [PATCH] Adjust to vfs interface
 
 ---
@@ -20,7 +20,7 @@ Subject: [PATCH] Adjust to vfs interface
  .../linear_hash/linear_hash_handler.c         | 14 +++--
  .../linear_hash/linear_hash_handler.h         |  6 +-
  .../linear_hash/linear_hash_types.h           |  1 +
- .../open_address_file_hash.c                  | 51 ++++++++--------
+ .../open_address_file_hash.c                  | 53 +++++++++--------
  .../open_address_file_hash.h                  |  6 ++
  ...pen_address_file_hash_dictionary_handler.c | 58 +++++++++++++++++--
  ...pen_address_file_hash_dictionary_handler.h |  1 +
@@ -31,7 +31,7 @@ Subject: [PATCH] Adjust to vfs interface
  src/file/ion_file.c                           |  4 +-
  src/file/ion_file.h                           | 17 +++++-
  src/file/kv_stdio_intercept.h                 | 29 +++++++++-
- src/key_value/kv_system.h                     | 38 +++++++++---
+ src/key_value/kv_system.h                     | 36 +++++++++---
  28 files changed, 375 insertions(+), 121 deletions(-)
 
 diff --git a/src/dictionary/bpp_tree/bpp_tree.c b/src/dictionary/bpp_tree/bpp_tree.c
@@ -574,7 +574,7 @@ index 5e9cfa46..2f807622 100644
  #define ION_MASTER_TABLE_CALCULATE_POS	-1
  #define ION_MASTER_TABLE_WRITE_FROM_END -2
 diff --git a/src/dictionary/linear_hash/linear_hash.c b/src/dictionary/linear_hash/linear_hash.c
-index bf259adb..df448667 100644
+index bf259adb..c75af898 100644
 --- a/src/dictionary/linear_hash/linear_hash.c
 +++ b/src/dictionary/linear_hash/linear_hash.c
 @@ -147,12 +147,6 @@ linear_hash_init(
@@ -619,12 +619,12 @@ index bf259adb..df448667 100644
  	}
  
 -	if (1 != fwrite(&linear_hash->bucket_map->data, sizeof(ion_fpos_t) * linear_hash->num_buckets, 1, linear_hash->state)) {
-+	// Free any allocated heap space
++	/* Free any allocated heap space */
 +	if (linear_hash->bucket_map->data != NULL) {
 +		free(linear_hash->bucket_map->data);
 +	}
 +
-+	// Allocate new heap space for bucket map and initialize with 0
++	/* Allocate new heap space for bucket map and initialize with 0 */
 +	linear_hash->bucket_map->data = malloc(sizeof(ion_fpos_t) * linear_hash->bucket_map->current_size);
 +	memset(linear_hash->bucket_map->data, 0, sizeof(ion_fpos_t) * linear_hash->bucket_map->current_size);
 +
@@ -722,7 +722,7 @@ index d7ce29d0..97ec6315 100644
  typedef ion_byte_t *linear_hash_record_status_t;
  
 diff --git a/src/dictionary/open_address_file_hash/open_address_file_hash.c b/src/dictionary/open_address_file_hash/open_address_file_hash.c
-index 73eab45a..98045162 100644
+index 73eab45a..bbb24b7a 100644
 --- a/src/dictionary/open_address_file_hash/open_address_file_hash.c
 +++ b/src/dictionary/open_address_file_hash/open_address_file_hash.c
 @@ -103,15 +103,16 @@ oafh_initialize(
@@ -761,15 +761,19 @@ index 73eab45a..98045162 100644
  			/* if a cell is in use, need to key to */
  
  			if (hash_map->super.compare(item->data, key, hash_map->super.record.key_size) == ION_IS_EQUAL) {
-@@ -223,9 +224,9 @@ oafh_insert(
- 					/* allows for values to be updated											// */
+@@ -220,12 +221,12 @@ oafh_insert(
+ 					return ION_STATUS_ERROR(err_duplicate_key);
+ 				}
+ 				else if (hash_map->write_concern == wc_update) {
+-					/* allows for values to be updated											// */
++					/* allows for values to be updated */
  					/* backup and write */
  					fseek(hash_map->file, SIZEOF(STATUS) + hash_map->super.record.key_size - record_size, SEEK_CUR);
 -#if ION_DEBUG
 +#if ION_OAF_DEBUG
  					DUMP((int) ftell(hash_map->file), "%i");
 -					DUMP(value, "%s");
-+					//DUMP(value, "%s");
++					/* DUMP(value, "%s"); */
  #endif
  					fwrite(value, hash_map->super.record.value_size, 1, hash_map->file);
  					free(item);
@@ -908,7 +912,7 @@ index 6638ac29..5b2d9366 100644
  @brief		Prototype declaration for hashmap
  */
 diff --git a/src/dictionary/open_address_file_hash/open_address_file_hash_dictionary_handler.c b/src/dictionary/open_address_file_hash/open_address_file_hash_dictionary_handler.c
-index 503f5f32..9ab19226 100644
+index 503f5f32..a2807f75 100644
 --- a/src/dictionary/open_address_file_hash/open_address_file_hash_dictionary_handler.c
 +++ b/src/dictionary/open_address_file_hash/open_address_file_hash_dictionary_handler.c
 @@ -91,6 +91,11 @@ oafdict_scan(
@@ -1002,7 +1006,7 @@ index 503f5f32..9ab19226 100644
  
  	/* this registers the dictionary the dictionary */
 -	oafh_initialize((ion_file_hashmap_t *) dictionary->instance, oafh_compute_simple_hash, key_type, key_size, value_size, dictionary_size, id);/* just pick an arbitary size for testing atm */
-+	// check the error
++	/*  check the error */
 +	ion_err_t error = oafh_initialize((ion_file_hashmap_t *) dictionary->instance, oafh_compute_simple_hash, key_type, key_size, value_size, dictionary_size, id);/* just pick an arbitary size for testing atm */
  
  	/*TODO The correct comparison operator needs to be bound at run time
@@ -1311,7 +1315,7 @@ index f1afd93e..07e026c1 100644
  #define ION_FILE_NULL -1
  
 diff --git a/src/file/kv_stdio_intercept.h b/src/file/kv_stdio_intercept.h
-index d035d79b..c780947e 100644
+index d035d79b..744dcfce 100644
 --- a/src/file/kv_stdio_intercept.h
 +++ b/src/file/kv_stdio_intercept.h
 @@ -72,6 +72,33 @@ extern "C" {
@@ -1338,7 +1342,7 @@ index d035d79b..c780947e 100644
 +#define  ftell(x)			ion_vfs_ftell(x)
 +#define  fremove(x)			ion_vfs_remove(x)
 +#define  frewind(x)			ion_vfs_rewind(x)
-+//#define  fdeleteall()		ION_VFS_File_Delete_All()
++/* #define  fdeleteall()		ION_VFS_File_Delete_All() */
 +#define	 SD_File_Exists(x)	ION_VFS_File_Exists(x)	
 +#if defined(__cplusplus)
 +}
@@ -1350,7 +1354,7 @@ index d035d79b..c780947e 100644
  
  #endif /* KV_STDIO_INTERCEPT_H_ */
 diff --git a/src/key_value/kv_system.h b/src/key_value/kv_system.h
-index 78d59891..3949d94c 100644
+index 78d59891..3a7d3023 100644
 --- a/src/key_value/kv_system.h
 +++ b/src/key_value/kv_system.h
 @@ -41,7 +41,10 @@
@@ -1364,7 +1368,7 @@ index 78d59891..3949d94c 100644
  #include <stdlib.h>
  #include <string.h>
  #include <stdint.h>
-@@ -51,29 +54,37 @@ extern "C" {
+@@ -51,12 +54,8 @@ extern "C" {
  #include <alloca.h>
  #endif
  
@@ -1379,11 +1383,7 @@ index 78d59891..3949d94c 100644
  
  #define ION_USING_MASTER_TABLE	1
  #define ION_USING_ECLIPSE		0
--#define ION_DEBUG				0
-+#define ION_DEBUG				1
- #define ION_IS_EQUAL			0
- #define ION_IS_GREATER			1
- #define ION_IS_LESS				-1
+@@ -67,13 +66,25 @@ extern "C" {
  #define ION_ZERO				0
  #define ION_RETURN_VALUE		0x73/* Magic default return value to be easy to spot */
  
@@ -1429,5 +1429,5 @@ index 78d59891..3949d94c 100644
  #if !defined(ARDUINO)
  
 -- 
-2.30.2
+2.32.0
 
