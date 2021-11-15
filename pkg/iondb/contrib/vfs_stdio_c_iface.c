@@ -1,10 +1,23 @@
-/******************************************************************************/
+/*
+ * Copyright (C) HAW Hamburg
+ *
+ * This file is subject to the terms and conditions of the GNU Lesser
+ * General Public License v2.1. See the file LICENSE in the top level
+ * directory for more details.
+ */
+
 /**
-@file       vfs_stdio_c_iface.h
-@author     Tobias Westphal
-@brief      This code contains implementation for vfs_stdio_c_iface.h file functions.
-*/
-/******************************************************************************/
+ * @ingroup     pkg_iondb
+ * @{
+ *
+ * @file
+ * @brief       This code contains implementations for stdio.h file functions
+                for vfs interface. Since the iondb lib does not have a vfs interface this is the wrapper.
+ *
+ * @author      Tobias Westphal <tobias.westphal@haw-hamburg.de>
+ *
+ * @}
+ */
 
 #include "vfs_stdio_c_iface.h"
 
