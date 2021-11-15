@@ -1,39 +1,10 @@
-
-/******************************************************************************/ // TODO Comments
+/******************************************************************************/
 /**
-@file        sd_stdio_c_iface.h
-@author        Tobias Westphal
-@brief        This code contains definitions for stdio.h file functions
+@file       vfs_stdio_c_iface.h
+@author     Tobias Westphal
+@brief      This code contains definitions for stdio.h file functions
             for vfs interface.
 @details    Since the iondb lib does not have a vfs interface this is the wrapper 
-@copyright    Copyright 2017
-            The University of British Columbia,
-            IonDB Project Contributors (see AUTHORS.md)
-@par Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-@par 1.Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-
-@par 2.Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-
-@par 3.Neither the name of the copyright holder nor the names of its contributors
-    may be used to endorse or promote products derived from this software without
-    specific prior written permission.
-
-@par THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-    LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
 */
 /******************************************************************************/
 
@@ -64,18 +35,13 @@ extern "C" {
 #include "kv_stdio_intercept.h"
 
 /**
-@brief        Wrapper around Arduino File type (a C++ object).
+@brief        Wrapper around vfs File.
 */
 typedef struct _VFS_File VFS_FILE;
 
 
 /**
-@brief        Wrapper around Arduino File type (a C++ object).
-*/
-typedef struct _VFS_File VFS_FILE;
-
-/**
-@brief        Wrapper around Arduino SD file close method.
+@brief        Wrapper around vfs file close method.
 @param        stream
                 A pointer to the C file struct type associated with an SD
                 file object.
@@ -114,7 +80,7 @@ ion_vfs_fflush(
 
 /**
 @brief        Get the position of the file's cursor.
-@details    Wrapper around Arduino SD file position method.
+@details    Wrapper around vfs file position method.
 @param        stream
                 A pointer to the C file struct type associated with an
                 SD file object.
@@ -130,8 +96,8 @@ ion_vfs_fgetpos(
 );
 
 /**
-@brief        Open a reference to an Arduino SD file given it's name.
-@details    Wrapper around Arduino SD file open method. This function
+@brief        Open a reference to an vfs file given it's name.
+@details    Wrapper around vfs file open method. This function
             will allocate memory, that must be freed by using @ref ion_vfs_fclose().
 @param        filepath
                 String containing the path to file (basic filename).
@@ -147,8 +113,8 @@ ion_vfs_fopen(
 );
 
 /**
-@brief        Read data from an Arduino SD file.
-@details    A wrapper around Arduino SD file read method.
+@brief        Read data from an vfs file.
+@details    A wrapper around vfs file read method.
 
             A total of @p size * @p nmemb bytes will be read into @p ptr
             on a success.
@@ -172,7 +138,7 @@ ion_vfs_fread(
 );
 
 /**
-@brief        Wrapper around Arduino SD file read method.
+@brief        Wrapper around vfs file lseek method.
 @param        stream
                 A pointer to a C file struct type associated with an SD
                 file object.
@@ -193,7 +159,7 @@ ion_vfs_fseek(
 );
 
 /**
-@brief        Set the current position of an Arduino SD file.
+@brief        Set the current position of an vfs file.
 @details    The parameter @pos should be retrieved using fgetpos.
 @param        stream
                 A pointer to a C file struct type associated with an SD
@@ -222,7 +188,7 @@ ion_vfs_printint(
 /**
 @brief        Reveals the file position of the given stream.
 @param        stream
-                A pointer to the C file struct associated with the Arduino
+                A pointer to the C file struct associated with the vfs
                 file object.
 @returns    On success, the current position indicator of the file is returned.
             Otherwise, @c -1L is returned.
@@ -233,8 +199,8 @@ ion_vfs_ftell(
 );
 
 /**
-@brief        Write data to an Arduino SD file.
-@details    Wrapper around Arduino SD file write method.
+@brief        Write data to an vfs file.
+@details    Wrapper around vfs file write method.
 @param        ptr
                 A pointer to the data that is to be written.
 @param        size
@@ -243,7 +209,7 @@ ion_vfs_ftell(
 @param        nmemb
                 The number of items to be written (each @p size bytes long).
 @param        stream
-                A pointer to a C file struct type associated with an SD
+                A pointer to a C file struct type associated with an VFS_FILE
                 file object.
 @returns    The number of items successfully written.
 */
@@ -256,8 +222,8 @@ ion_vfs_fwrite(
 );
 
 /**
-@brief        Remove a file from the Arduino SD file system.
-@details    Wrapper around Arduino SD file remove method.
+@brief        Remove a file from the file system used by vfs.
+@details    Wrapper around vfs file remove method.
 @param        filename
                 A pointer to the string data containing the path to the file
                 that is to be deleted.
@@ -269,8 +235,8 @@ ion_vfs_remove(
 );
 
 /**
-@brief        Set the file position to the beginning of the file
-            for a given Arduino SD File stream.
+@brief        Set the file position to the beginning of the vfs file
+            for a given File stream.
 @param        stream
                 A pointer to a C file struct type associated with an SD
                 file object.
@@ -281,7 +247,7 @@ ion_vfs_rewind(
 );
 
 /**
-@brief        Check to see if an Arduino SD File exists.
+@brief        Check to see if an File exists.
 @param        filepath
                 A pointer to the string data containing the path to the
                 file (basic filename).
@@ -293,7 +259,7 @@ ION_VFS_File_Exists(
 );
 
 /**
-@brief        Deletes all files on the Arduino device.
+@brief        Deletes all files on the vfs layer of a device.
 @returns    @p 1 if all deletes were successful, @c 0 otherwise.
 */
 int

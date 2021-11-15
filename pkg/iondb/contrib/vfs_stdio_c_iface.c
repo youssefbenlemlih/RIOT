@@ -1,40 +1,8 @@
-
 /******************************************************************************/
 /**
-@file        vfs_stdio_c_iface.cpp
-@author        Scott Fazackerley
-@brief        This code contains implementations for stdio.h file functions
-            using Arduino SD File libraries.
-@details    Since the Arduino library doesn't have definitions for
-            standard I/O file functions, we have to write our own.
-@copyright    Copyright 2017
-            The University of British Columbia,
-            IonDB Project Contributors (see AUTHORS.md)
-@par Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-@par 1.Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-
-@par 2.Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-
-@par 3.Neither the name of the copyright holder nor the names of its contributors
-    may be used to endorse or promote products derived from this software without
-    specific prior written permission.
-
-@par THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-    LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
+@file       vfs_stdio_c_iface.h
+@author     Tobias Westphal
+@brief      This code contains implementation for vfs_stdio_c_iface.h file functions.
 */
 /******************************************************************************/
 
@@ -240,9 +208,9 @@ ion_vfs_fopen(
         return NULL;
     }
 
-    if (seek_start == 1) // TODO is this actually Necesarry?
+    if (seek_start == 1) /* TODO is this actually Necesarry? */
     {
-        // TODO Error not handled
+        /* TODO Error not handled */
         vfs_lseek(file->fd_number, (off_t)0, SEEK_SET);
     }
 
@@ -394,7 +362,7 @@ int VFS_File_Delete_All(
     //     }
     // }
 
-    return 0;
+    return err_not_implemented;
 }
 
 #endif
