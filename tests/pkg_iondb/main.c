@@ -171,13 +171,13 @@ KEY_TYPE test08KeyDuplicates[] = TEST_08_KEY_DUPLICATES;
 #define TEST_08_KEY_LENGTH ARRAY_SIZE(test08Keys)
 #define TEST_08_KEY_DUPLICATES_LENGTH ARRAY_SIZE(test08KeyDuplicates)
 
-VALUE_TYPE test08DuplicatesChecksums[TEST_08_KEY_DUPLICATES_LENGTH] = {0}; // make as parameter
+VALUE_TYPE test08DuplicatesChecksums[TEST_08_KEY_DUPLICATES_LENGTH] = {0}; // TODO make as parameter
 
 /* Global Variables */
 ion_byte_t RETRIEVE_SPACE_KEY[sizeof(KEY_TYPE)] = {0};
 ion_byte_t RETRIEVE_SPACE_VALUE[sizeof(VALUE_TYPE)] = {0};
 
-INDEX_TYPE DICT_SIZE_GLOB = 0;
+INDEX_TYPE DICT_SIZE_GLOB = 0; /* Here only initialized, in main set to special value */
 
 /* --- Helper Functions Begin --- */
 
@@ -1191,7 +1191,7 @@ static int test08(ion_dictionary_type_t current_type)
     return 0;
 }
 
-/* TEST09: Testing Duplicates with Read and Cursor using test08Keys keys and test08Values values */
+/* TEST09: Testing config_t usage and the manipulation */
 static int test09(ion_dictionary_type_t current_type)
 {
     puts("[TEST09]: Config Test");
@@ -1295,6 +1295,120 @@ static int test09(ion_dictionary_type_t current_type)
     return 0;
 }
 
+/* TEST10: Testing byte arrays as values and use test02Keys */
+static int test10(ion_dictionary_type_t current_type)
+{
+    puts("[TEST10]: Config Test");
+
+    /* Boiler Plate Begin */
+    ion_dictionary_handler_t handler = {0};
+    ion_dictionary_t dict = {0};
+    ion_status_t status = {0};
+
+    status.error = ion_init_master_table();
+    if (status.error != err_ok)
+    {
+        printf("[FAILED]: to initialize master table: %d\n", status.error);
+        return 1;
+    }
+
+    /* Used to bind dictionary specific function to the handler */
+    ion_switch_handler(current_type, &handler);
+
+    ion_key_type_t k_type = key_type_numeric_signed;
+    ion_key_size_t k_size = sizeof(KEY_TYPE);
+    ion_value_size_t v_size = 30;
+
+    status.error = ion_master_table_create_dictionary(&handler, &dict, k_type, k_size, v_size, DICT_SIZE_GLOB);
+    if (status.error != err_ok)
+    {
+        printf("- [FAILED]: to create the dictionary with error %d\n", status.error);
+        clear_dict_n_master_table(NULL, 0);
+        return 1;
+    }
+
+    /* Read the dictionary id for later opening usage  */
+    ion_dictionary_id_t dict_id = dict.instance->id;
+
+    /* Boiler Plate End */
+
+    int32_t i = 0;  /* signed integer because the second for loop count to zero */
+    int32_t u = 0;
+
+    /* Be carefull with malloc and always allocate as much memory space as set at creation of the dictionary */
+    /* With less memory given, a segmentation error might occur */
+    ion_byte_t* local_retrieve_space_value_ptr = malloc(v_size); /* Definition */
+    memset(local_retrieve_space_value_ptr, 0, v_size); /* Initialize to 0 */
+
+    printf("INSERT test02Keys keys with generated values of value size 30 ");
+    for (i = 0; i < (int32_t)TEST_02_KEY_LENGTH; i++)
+    {
+        for (u = 0; u < v_size; u++)
+        {
+            local_retrieve_space_value_ptr[u] = (uint8_t) i;
+        }
+
+        status = dictionary_insert(&dict, IONIZE(test02Keys[i], KEY_TYPE), local_retrieve_space_value_ptr);
+        if (status.error != err_ok)
+        {
+            printf("- [FAILED]: Insert Status at i: %d with error %d\n", i, status.error);
+            /* Free allocated space by malloc */
+            free(local_retrieve_space_value_ptr);
+            clear_dict_n_master_table(&dict, dict_id);
+            return 1;
+        }
+    }
+    puts("- [WORKED]");
+
+    printf("READ test02Keys keys and generated values");
+    for (i = (int32_t)TEST_02_KEY_LENGTH - 1; i >= 0 ; i--)
+    {
+        memset(local_retrieve_space_value_ptr, 0, v_size); /* Set to 0 */
+        status = dictionary_get(&dict, IONIZE(test02Keys[i], KEY_TYPE), local_retrieve_space_value_ptr);
+
+        if (status.error != err_ok)
+        {
+            printf("- [FAILED]: Read Status at i: %d with error %d \n", i, status.error);
+            /* Free allocated space by malloc */
+            free(local_retrieve_space_value_ptr);
+            clear_dict_n_master_table(&dict, dict_id);
+            return 1;
+        }
+        else
+        {
+            for (u = 0; u < v_size; u++)
+            {
+                if (local_retrieve_space_value_ptr[u] != (uint8_t) i) 
+                {
+                    printf("- [FAILED]: Read false retrieved value at i: %d with u %d \n", i, u);
+                    /* Free allocated space by malloc */
+                    free(local_retrieve_space_value_ptr);
+                    clear_dict_n_master_table(&dict, dict_id);
+                    return 1;
+                }
+            }
+        }
+    }
+    puts("- [WORKED]");
+
+    /* Free allocated space by malloc */
+    free(local_retrieve_space_value_ptr);
+
+    /* Clearing Boiler Plate */
+
+    if (clear_dict_n_master_table(&dict, dict_id) != err_ok)
+    {
+        printf("[FAILED]: to close/delete dictionary and master table \n");
+        return 1;
+    }
+
+    /* Clearing Boiler Plate */
+
+    puts("[TEST10 SUCCESS]");
+    return 0;
+}
+
+
 /* --- TEST End --- */
 
 int main(void)
@@ -1357,6 +1471,8 @@ int main(void)
         }
     }
 
+    /* Apply special values */
+
     DICT_SIZE_GLOB = 100;
     
     ion_dictionary_handler_t test_handler = {0};
@@ -1388,6 +1504,8 @@ int main(void)
         testsFailed += test08(i);
         puts("");
         testsFailed += test09(i);
+        puts("");
+        testsFailed += test10(i);
         puts("");
         puts("");
     }

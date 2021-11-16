@@ -12,7 +12,8 @@ The following is tested:
 - TEST06: Cursor Range
 - TEST07: Cursor All Records
 - TEST08: Testing Duplicates with Read and Cursor using test08Keys keys and test08Values values
-- TEST09: Testing Duplicates with Read and Cursor using test08Keys keys and test08Values values
+- TEST09: Testing config_t usage and the manipulation
+- TEST10: Testing byte arrays as values and use test02Keys
 
 # Test Usage
 If you want to test iondb on native you should first create an image on your local machine (Step 0).
