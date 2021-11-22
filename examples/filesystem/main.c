@@ -25,6 +25,7 @@
 
 #include "shell.h"
 #include "board.h" /* MTD_0 is defined in board.h */
+#include "store.h"
 
 /* Configure MTD device for SD card if none is provided */
 #if !defined(MTD_0) && MODULE_MTD_SDCARD
@@ -40,17 +41,16 @@ extern sdcard_spi_t sdcard_spi_devs[SDCARD_SPI_NUM];
 /* Configure MTD device for the first SD card */
 static mtd_sdcard_t mtd_sdcard_dev = {
     .base = {
-        .driver = &mtd_sdcard_driver
-    },
+        .driver = &mtd_sdcard_driver},
     .sd_card = &sdcard_spi_devs[0],
     .params = &sdcard_spi_params[0],
 };
-static mtd_dev_t *mtd0 = (mtd_dev_t*)&mtd_sdcard_dev;
+static mtd_dev_t *mtd0 = (mtd_dev_t *)&mtd_sdcard_dev;
 #define MTD_0 mtd0
 #endif
 
 /* Flash mount point */
-#define FLASH_MOUNT_POINT   "/sda"
+#define FLASH_MOUNT_POINT "/sda"
 
 /* In this example, MTD_0 is used as mtd interface for littlefs or spiffs */
 /* littlefs and spiffs basic usage are shown */
@@ -132,21 +132,21 @@ static vfs_mount_t flash_mount = {
 
 /* Add simple macro to check if an MTD device together with a filesystem is
  * compiled in */
-#if  defined(MTD_0) && \
-     (defined(MODULE_SPIFFS) || \
-      defined(MODULE_LITTLEFS) || \
-      defined(MODULE_LITTLEFS2) || \
-      defined(MODULE_FATFS_VFS))
-#define FLASH_AND_FILESYSTEM_PRESENT    1
+#if defined(MTD_0) &&             \
+    (defined(MODULE_SPIFFS) ||    \
+     defined(MODULE_LITTLEFS) ||  \
+     defined(MODULE_LITTLEFS2) || \
+     defined(MODULE_FATFS_VFS))
+#define FLASH_AND_FILESYSTEM_PRESENT 1
 #else
-#define FLASH_AND_FILESYSTEM_PRESENT    0
+#define FLASH_AND_FILESYSTEM_PRESENT 0
 #endif
 
 /* constfs example */
 #include "fs/constfs.h"
 
 #define HELLO_WORLD_CONTENT "Hello World!\n"
-#define HELLO_RIOT_CONTENT  "Hello RIOT!\n"
+#define HELLO_RIOT_CONTENT "Hello RIOT!\n"
 
 /* this defines two const files in the constfs */
 static constfs_file_t constfs_files[] = {
@@ -159,8 +159,7 @@ static constfs_file_t constfs_files[] = {
         .path = "/hello-riot",
         .size = sizeof(HELLO_RIOT_CONTENT),
         .data = (const uint8_t *)HELLO_RIOT_CONTENT,
-    }
-};
+    }};
 
 /* this is the constfs specific descriptor */
 static constfs_t constfs_desc = {
@@ -183,7 +182,8 @@ static int _mount(int argc, char **argv)
     (void)argv;
 #if FLASH_AND_FILESYSTEM_PRESENT
     int res = vfs_mount(&flash_mount);
-    if (res < 0) {
+    if (res < 0)
+    {
         printf("Error while mounting %s...try format\n", FLASH_MOUNT_POINT);
         return 1;
     }
@@ -202,7 +202,8 @@ static int _format(int argc, char **argv)
     (void)argv;
 #if FLASH_AND_FILESYSTEM_PRESENT
     int res = vfs_format(&flash_mount);
-    if (res < 0) {
+    if (res < 0)
+    {
         printf("Error while formatting %s\n", FLASH_MOUNT_POINT);
         return 1;
     }
@@ -221,7 +222,8 @@ static int _umount(int argc, char **argv)
     (void)argv;
 #if FLASH_AND_FILESYSTEM_PRESENT
     int res = vfs_umount(&flash_mount);
-    if (res < 0) {
+    if (res < 0)
+    {
         printf("Error while unmounting %s\n", FLASH_MOUNT_POINT);
         return 1;
     }
@@ -236,7 +238,8 @@ static int _umount(int argc, char **argv)
 
 static int _cat(int argc, char **argv)
 {
-    if (argc < 2) {
+    if (argc < 2)
+    {
         printf("Usage: %s <file>\n", argv[0]);
         return 1;
     }
@@ -244,23 +247,27 @@ static int _cat(int argc, char **argv)
      * on native, open/read/write/close/... are plugged to RIOT vfs */
 #if defined(MODULE_NEWLIB) || defined(MODULE_PICOLIBC)
     FILE *f = fopen(argv[1], "r");
-    if (f == NULL) {
+    if (f == NULL)
+    {
         printf("file %s does not exist\n", argv[1]);
         return 1;
     }
     char c;
-    while (fread(&c, 1, 1, f) != 0) {
+    while (fread(&c, 1, 1, f) != 0)
+    {
         putchar(c);
     }
     fclose(f);
 #else
     int fd = open(argv[1], O_RDONLY);
-    if (fd < 0) {
+    if (fd < 0)
+    {
         printf("file %s does not exist\n", argv[1]);
         return 1;
     }
     char c;
-    while (read(fd, &c, 1) != 0) {
+    while (read(fd, &c, 1) != 0)
+    {
         putchar(c);
     }
     close(fd);
@@ -271,28 +278,33 @@ static int _cat(int argc, char **argv)
 
 static int _tee(int argc, char **argv)
 {
-    if (argc != 3) {
+    if (argc != 3)
+    {
         printf("Usage: %s <file> <str>\n", argv[0]);
         return 1;
     }
 
 #if defined(MODULE_NEWLIB) || defined(MODULE_PICOLIBC)
     FILE *f = fopen(argv[1], "w+");
-    if (f == NULL) {
+    if (f == NULL)
+    {
         printf("error while trying to create %s\n", argv[1]);
         return 1;
     }
-    if (fwrite(argv[2], 1, strlen(argv[2]), f) != strlen(argv[2])) {
+    if (fwrite(argv[2], 1, strlen(argv[2]), f) != strlen(argv[2]))
+    {
         puts("Error while writing");
     }
     fclose(f);
 #else
     int fd = open(argv[1], O_RDWR | O_CREAT);
-    if (fd < 0) {
+    if (fd < 0)
+    {
         printf("error while trying to create %s\n", argv[1]);
         return 1;
     }
-    if (write(fd, argv[2], strlen(argv[2])) != (ssize_t)strlen(argv[2])) {
+    if (write(fd, argv[2], strlen(argv[2])) != (ssize_t)strlen(argv[2]))
+    {
         puts("Error while writing");
     }
     close(fd);
@@ -300,14 +312,21 @@ static int _tee(int argc, char **argv)
     return 0;
 }
 
+static int _hello(int argc, char **argv)
+{
+    hello();
+    return 0;
+}
 static const shell_command_t shell_commands[] = {
-    { "mount", "mount flash filesystem", _mount },
-    { "format", "format flash file system", _format },
-    { "umount", "unmount flash filesystem", _umount },
-    { "cat", "print the content of a file", _cat },
-    { "tee", "write a string in a file", _tee },
-    { NULL, NULL, NULL }
-};
+    {"mount", "mount flash filesystem", _mount},
+    {"format", "format flash file system", _format},
+    {"umount", "unmount flash filesystem", _umount},
+    {"cat", "print the content of a file", _cat},
+    {"tee", "write a string in a file", _tee},
+    {"hello", "print hello", _hello},
+    {"save", "save a value", _save},
+    // {"load", "load a previously saved value", _load},
+    {NULL, NULL, NULL}};
 
 int main(void)
 {
@@ -319,10 +338,12 @@ int main(void)
     fatfs_mtd_devs[fs_desc.vol_idx] = MTD_0;
 #endif
     int res = vfs_mount(&const_mount);
-    if (res < 0) {
+    if (res < 0)
+    {
         puts("Error while mounting constfs");
     }
-    else {
+    else
+    {
         puts("constfs mounted successfully");
     }
 
@@ -331,3 +352,54 @@ int main(void)
 
     return 0;
 }
+
+static int _save(int argc, char **argv)
+{
+    if (argc != 3)
+    {
+        printf("Usage: %s <key> <value>\n", argv[0]);
+        return 1;
+    }
+    return save(argv[1], argv[2]);
+}
+
+// static int _load(int argc, char **argv)
+// {
+//     char *buffer = 0;
+//     if (argc != 3)
+//     {
+//         printf("Usage: %s <key> <value>\n", argv[0]);
+//         return 1;
+//     }
+//     /* With newlib or picolibc, low-level syscalls are plugged to RIOT vfs
+//      * on native, open/read/write/close/... are plugged to RIOT vfs */
+// #if defined(MODULE_NEWLIB) || defined(MODULE_PICOLIBC)
+//     FILE *f = fopen(argv[1], "r");
+//     if (f == NULL)
+//     {
+//         printf("file %s does not exist\n", argv[1]);
+//         return 1;
+//     }
+//     char c;
+//     while (fread(&c, 1, 1, f) != 0)
+//     {
+//         putchar(c);
+//     }
+//     fclose(f);
+// #else
+//     int fd = open(argv[1], O_RDONLY);
+//     if (fd < 0)
+//     {
+//         printf("file %s does not exist\n", argv[1]);
+//         return 1;
+//     }
+//     char c;
+//     while (read(fd, &c, 1) != 0)
+//     {
+//         putchar(c);
+//     }
+//     close(fd);
+// #endif
+//     fflush(stdout);
+//     return 0;
+// }
