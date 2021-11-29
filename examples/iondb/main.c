@@ -4,7 +4,38 @@
 #include "ion_master_table.h"
 #include "shell.h"
 #include "debug.h"
+#ifdef MODULE_FATFS
+#include "fs/fatfs.h"
+#endif
+#ifdef MODULE_VFS
+#include "vfs.h"
+#endif
+#ifdef MODULE_MTD
+#include "mtd.h"
+#endif
+#ifdef Module_BOARD
+#include "board.h"
+#endif
 
+#ifdef MODULE_MTD_SDCARD
+#include "mtd_sdcard.h"
+#include "sdcard_spi.h"
+#include "sdcard_spi_params.h"
+#endif
+
+#ifdef MODULE_FATFS
+static fatfs_desc_t fatfs = {
+    .vol_idx = 0};
+
+static vfs_mount_t _test_vfs_mount = {
+    .mount_point = MNT_PATH_VFS,
+    .fs = &fatfs_file_system,
+    .private_data = (void *)&fatfs,
+};
+
+/* provide mtd devices for use within diskio layer of fatfs */
+mtd_dev_t *fatfs_mtd_devs[FF_VOLUMES];
+#endif
 static int _hello(int argc, char **argv)
 {
     (void)argc;
@@ -12,6 +43,16 @@ static int _hello(int argc, char **argv)
     printf("%s\n", "Hello world");
     return 1;
 }
+#ifdef MODULE_MTD_NATIVE
+/* mtd device for native is provided in boards/native/board_init.c */
+extern mtd_dev_t *mtd0;
+#elif MODULE_MTD_SDCARD
+#define SDCARD_SPI_NUM ARRAY_SIZE(sdcard_spi_params)
+extern sdcard_spi_t sdcard_spi_devs[SDCARD_SPI_NUM];
+mtd_sdcard_t mtd_sdcard_devs[SDCARD_SPI_NUM];
+/* always default to first sdcard*/
+static mtd_dev_t *mtd1 = (mtd_dev_t *)&mtd_sdcard_devs[0];
+#endif
 #define KEY_TYPE int32_t
 #define VALUE_TYPE int32_t
 #define INDEX_TYPE uint32_t
@@ -60,7 +101,7 @@ static ion_err_t clear_dict_n_master_table(ion_dictionary_t *dict, ion_dictionar
         DEBUG("Master Table Close Failed \n");
     }
 
-    if(ion_delete_master_table() != err_ok)
+    if (ion_delete_master_table() != err_ok)
     {
         err += 1;
         DEBUG("Master Table Delete Failed \n");
@@ -192,6 +233,42 @@ static int _test(int argc, char **argv)
     puts("[TEST02 SUCCESS]");
     return 0;
 }
+int db_init(void)
+{
+
+    /* Mount Begin */
+#if MODULE_VFS && MODULE_FATFS
+
+#if MODULE_MTD_SDCARD
+    INDEX_TYPE error = 0;
+    for (unsigned int i = 0; i < SDCARD_SPI_NUM; i++)
+    {
+        mtd_sdcard_devs[i].base.driver = &mtd_sdcard_driver;
+        mtd_sdcard_devs[i].sd_card = &sdcard_spi_devs[i];
+        mtd_sdcard_devs[i].params = &sdcard_spi_params[i];
+        fatfs_mtd_devs[i] = &mtd_sdcard_devs[i].base;
+
+        error = mtd_init(&mtd_sdcard_devs[i].base);
+        if (error != 0)
+            printf("%d mtd_init error code %d \n", __LINE__, error);
+    }
+#endif
+
+#if defined(MODULE_MTD_NATIVE) || defined(MODULE_MTD_MCI)
+    fatfs_mtd_devs[fatfs.vol_idx] = mtd0;
+#elif defined(MODULE_FATFS)
+    fatfs_mtd_devs[fatfs.vol_idx] = mtd1;
+#endif
+
+    INDEX_TYPE ret = vfs_mount(&_test_vfs_mount);
+    if (ret != 0)
+    {
+        printf("[MOUNT]: NOT SUCCESSFULL\n");
+        return -1;
+    }
+#endif
+    return 0;
+}
 
 static const shell_command_t shell_commands[] = {
     {"hello", "Prints hello world", _hello},
@@ -200,6 +277,7 @@ static const shell_command_t shell_commands[] = {
 
 int main(void)
 {
+    db_init();
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
     return 0;

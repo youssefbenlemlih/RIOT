@@ -1,5 +1,5 @@
 # name of your application
-APPLICATION = filesystem
+APPLICATION = iondb_test
 
 # If no BOARD is found in the environment, use this default:
 BOARD ?= native
@@ -24,13 +24,7 @@ USEMODULE += shell
 USEMODULE += shell_commands
 USEMODULE += ps
 
-# Use MTD (flash layer)
-USEMODULE += mtd
-# USEMODULE += mtd_sdcard
-
-# Use VFS
-USEMODULE += vfs
-
+#### Iondb
 USEMODULE += fatfs_vfs
 FEATURES_OPTIONAL += periph_rtc
 
@@ -40,12 +34,23 @@ USEMODULE += iondb-dictionary-linearhash
 USEMODULE += iondb-dictionary-openaddressfilehash
 USEMODULE += iondb-dictionary-openaddresshash
 USEMODULE += iondb-dictionary-skiplist
-# Use a file system
-# USEMODULE += littlefs
-USEMODULE += littlefs2
-# USEMODULE += spiffs
-# USEMODULE += fatfs_vfs
-USEMODULE += constfs
-# USEMODULE += devfs
+
+# For real hardware and spi sd_card usage
+ifneq ($(BOARD), native)
+	USEMODULE += sdcard_spi
+	USEMODULE += fatfs_diskio_mtd
+
+	# for actual hardware use mtd_sdcard as storage device
+	USEMODULE += mtd_sdcard
+
+	ifeq ($(BOARD), esp32-wroom-32)
+	CFLAGS += -DSDCARD_SPI_PARAM_SPI=SPI_DEV\(1\)
+	CFLAGS += -DSDCARD_SPI_PARAM_CS=GPIO_PIN\(2,15\)
+	CFLAGS += -DSDCARD_SPI_PARAM_CLK=GPIO_PIN\(2,14\)
+	CFLAGS += -DSDCARD_SPI_PARAM_MOSI=GPIO_PIN\(2,13\)
+	CFLAGS += -DSDCARD_SPI_PARAM_MISO=GPIO_PIN\(2,12\)
+	endif
+
+endif
 
 include $(RIOTBASE)/Makefile.include
