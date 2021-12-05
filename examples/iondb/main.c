@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <string.h>
 #include "shell.h"
@@ -11,13 +10,16 @@ static int _hello(int argc, char **argv)
     printf("%s\n", "Hello world");
     return 1;
 }
-/* TEST02: Read, Insert, Read, Delete, Read of Keys of test02Keys and test02Values */
+
 static int _test(int argc, char **argv)
 {
+    if (argc < 2)
+    {
+        printf("Missing arg\n Usegae: save value");
+    }
     printf("%s\n", "Hello world");
-    save(0,12);
-    load(-20,12);
-    return 0;
+    person_t p = {.id = "34", .lat = 3, .lon = 4, .status = 1, .timestamp = 99};
+    return save_person(p);
 }
 static const shell_command_t shell_commands[] = {
     {"hello", "Prints hello world", _hello},
