@@ -1,7 +1,7 @@
 #ifndef person_t
 struct person
 {
-    char id[14];
+int16_t id ;
     int status;
     double lat;
     double lon;
@@ -10,10 +10,6 @@ struct person
 typedef struct person person_t;
 #endif
 
-int db_init(void);
-
-int save_person(person_t person);
+int save_person2(person_t person);
 
 // int get_all_persons(person_t* persons);
-
-person_t find_person_by_id(char *id);
