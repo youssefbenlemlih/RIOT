@@ -8,9 +8,10 @@ struct person
     uint64_t timestamp;
 };
 typedef struct person person_t;
+typedef struct person *personPtr;
 #endif
 
 int save_person(person_t person);
-person_t find_person_by_id(char *id);
+int find_person_by_id(char *id, personPtr out);
 int db_init(void);
 int db_close(void);

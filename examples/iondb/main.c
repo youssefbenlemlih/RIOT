@@ -51,11 +51,13 @@ static int _find(int argc, char **argv)
         puts("Usage: find [id]");
         return 1;
     }
-    printf("Querying person with id=%s\n",argv[1]);
-    person_t p  = find_person_by_id(argv[1]);
-    printPerson(p);
-    return 1;
+    printf("Querying person with id=%s\n", argv[1]);
+    personPtr p = NULL;
+    int ret = find_person_by_id(argv[1], p);
+    // printPerson(*p);
+    return ret;
 }
+
 static int _print(int argc, char **argv)
 {
     person_t p = {.id = {'I', 'd', '\0'}, .lat = 3, .lon = 4, .status = 1, .timestamp = 99};

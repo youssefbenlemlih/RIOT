@@ -10,6 +10,7 @@ struct person
     uint64_t timestamp;
 };
 typedef struct person person_t;
+typedef struct person *personPtr;
 #endif
 #ifdef MODULE_MTD_SDCARD
 #include "mtd_sdcard.h"
@@ -191,24 +192,38 @@ int db_close(void)
 
 int save_person(person_t person)
 {
-    INDEX_TYPE i = 0;
-    VALUE_TYPE in_value = person;
-
-    printf("UPDATE test04Keys keys with test04UpdatedValues values ");
-    status = dictionary_update(&dict, person.id, &in_value);
+    printf("Updating person\n");
+    status = dictionary_update(&dict, IONIZE(*(person.id), KEY_TYPE), &person);
     if (status.error != err_ok)
     {
-        printf("- [FAILED]: Update Status at i: %d with error %d\n", i, status.error);
+        printf("- [FAILED]: Update Status, error %d\n", status.error);
         return 1;
     }
     puts("- [WORKED]");
     return 0;
 }
 
-person_t find_person_by_id(char *id)
+    ion_byte_t RETRIEVE_SPACE_VALUE[sizeof(VALUE_TYPE)] = {0};
+
+void printPerson2(person_t p)
 {
-    person_t p = {.id = {'2', '\0'}};
-    return p;
+    printf("Person{id=%.14s,lat=%f,lon=%f,status=%d,timestamp=%" PRIu64 "}\n", p.id, p.lat, p.lat, p.status, p.timestamp);
+}
+int find_person_by_id(char *id, personPtr p)
+{
+    // person_t* p = {0};
+    printf("Finding person by id\n");
+    status = dictionary_get(&dict, IONIZE(*id, KEY_TYPE), RETRIEVE_SPACE_VALUE);
+    VALUE_TYPE out = NEUTRALIZE(RETRIEVE_SPACE_VALUE, VALUE_TYPE);
+    if (status.error != err_ok)
+    {
+        printf("- [FAILED]:  Error %d\n", status.error);
+        return 1;
+    }
+    puts("- [WORKED]");
+    // p = &out;
+    printPerson2(out);
+    return 0;
 }
 
 // printf("READ test04Keys keys and expect test04UpdatedValues ");
