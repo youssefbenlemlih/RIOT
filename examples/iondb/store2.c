@@ -59,32 +59,10 @@ mtd_dev_t *fatfs_mtd_devs[FF_VOLUMES];
 #define INDEX_TYPE uint32_t
 ion_byte_t RETRIEVE_SPACE_KEY[sizeof(KEY_TYPE)] = {0};
 ion_byte_t RETRIEVE_SPACE_VALUE[sizeof(VALUE_TYPE)] = {0};
-#define TEST_04_KEYS      \
-    {                     \
-        -32, -16, -8, -4, \
-            -2, -1, 1, 2, \
-            4, 8, 16, 32  \
-    }
 
-#define TEST_04_VALUES                     \
-    {                                      \
-        -100, 10024, 10077, 10011,         \
-            -100212, 10021, 10021, 10021,  \
-            -100444, 100845, 100123, 10037 \
-    }
-
-#define TEST_04_UPDATED_VALUES             \
-    {                                      \
-        10024, -100, 10011, 10077,         \
-            10021, -10021, -10021, 100212, \
-            100444, 100123, 10037, -100845 \
-    }
-
-
-KEY_TYPE test04Keys[] = TEST_04_KEYS;
-VALUE_TYPE test04Values[] = TEST_04_VALUES;
-VALUE_TYPE test04UpdatedValues[] = TEST_04_UPDATED_VALUES;
-#define TEST_04_KEY_LENGTH ARRAY_SIZE(test04Keys)
+KEY_TYPE test04Key = -32;
+VALUE_TYPE test04Value = -100;
+VALUE_TYPE test04UpdatedValue = 34;
 
 
 INDEX_TYPE DICT_SIZE_GLOB = 100;
@@ -201,85 +179,67 @@ int save_person2(person_t person)
     VALUE_TYPE out_value = 0;
 
     printf("UPDATE test04Keys keys with test04UpdatedValues values ");
-    for (i = 0; i < TEST_04_KEY_LENGTH; i++)
+    in_value = test04UpdatedValue;
+    status = dictionary_update(&dict, IONIZE(test04Key, KEY_TYPE), &in_value);
+    if (status.error != err_ok)
     {
-        in_value = test04UpdatedValues[i];
-        status = dictionary_update(&dict, IONIZE(test04Keys[i], KEY_TYPE), &in_value);
-        if (status.error != err_ok)
-        {
-            printf("- [FAILED]: Update Status at i: %d with error %d\n", i, status.error);
-            clear_dict_n_master_table(&dict, dict_id);
-            return 1;
-        }
+        printf("- [FAILED]: Update Status at i: %d with error %d\n", i, status.error);
+        clear_dict_n_master_table(&dict, dict_id);
+        return 1;
     }
     puts("- [WORKED]");
 
     printf("READ test04Keys keys and expect test04UpdatedValues ");
-    for (i = 0; i < TEST_04_KEY_LENGTH; i++)
+    status = dictionary_get(&dict, IONIZE(test04Key, KEY_TYPE), RETRIEVE_SPACE_VALUE);
+    out_value = NEUTRALIZE(RETRIEVE_SPACE_VALUE, VALUE_TYPE);
+    if (status.error != err_ok || out_value != test04UpdatedValue)
     {
-        status = dictionary_get(&dict, IONIZE(test04Keys[i], KEY_TYPE), RETRIEVE_SPACE_VALUE);
-        out_value = NEUTRALIZE(RETRIEVE_SPACE_VALUE, VALUE_TYPE);
-        if (status.error != err_ok || out_value != test04UpdatedValues[i])
-        {
-            printf("- [FAILED]: Read Status at i: %d with error %d | Read: %d, Expected: %d\n", i, status.error, out_value, test04UpdatedValues[i]);
-            clear_dict_n_master_table(&dict, dict_id);
-            return 1;
-        }
+        printf("- [FAILED]: Read Status at i: %d with error %d | Read: %d, Expected: %d\n", i, status.error, out_value, test04UpdatedValue);
+        clear_dict_n_master_table(&dict, dict_id);
+        return 1;
     }
     puts("- [WORKED]");
 
     printf("DELETE test04Keys keys ");
-    for (i = 0; i < TEST_04_KEY_LENGTH; i++)
-    {
-        status = dictionary_delete(&dict, IONIZE(test04Keys[i], KEY_TYPE));
+        status = dictionary_delete(&dict, IONIZE(test04Key, KEY_TYPE));
         if (status.error != err_ok)
         {
             printf("- [FAILED]: Delete Status at i: %d with error %d\n", i, status.error);
             clear_dict_n_master_table(&dict, dict_id);
             return 1;
-        }
     }
     puts("- [WORKED]");
 
     printf("INSERT test04Keys keys with test04Values values ");
-    for (i = 0; i < TEST_04_KEY_LENGTH; i++)
-    {
-        in_value = test04Values[i];
-        status = dictionary_insert(&dict, IONIZE(test04Keys[i], KEY_TYPE), &in_value);
+        in_value = test04Value;
+        status = dictionary_insert(&dict, IONIZE(test04Key, KEY_TYPE), &in_value);
         if (status.error != err_ok)
         {
             printf("- [FAILED]: Insert Status at i: %d with error %d\n", i, status.error);
             clear_dict_n_master_table(&dict, dict_id);
             return 1;
-        }
     }
     puts("- [WORKED]");
 
     printf("UPDATE test04Keys keys with test04UpdatedValues values ");
-    for (i = 0; i < TEST_04_KEY_LENGTH; i++)
-    {
-        in_value = test04UpdatedValues[i];
-        status = dictionary_update(&dict, IONIZE(test04Keys[i], KEY_TYPE), &in_value);
+        in_value = test04UpdatedValue;
+        status = dictionary_update(&dict, IONIZE(test04Key, KEY_TYPE), &in_value);
         if (status.error != err_ok)
         {
             printf("- [FAILED]: Update Status at i: %d with error %d\n", i, status.error);
             clear_dict_n_master_table(&dict, dict_id);
             return 1;
-        }
     }
     puts("- [WORKED]");
 
     printf("READ test04Keys keys and EXPECT test04UpdatedValues ");
-    for (i = 0; i < TEST_04_KEY_LENGTH; i++)
-    {
-        status = dictionary_get(&dict, IONIZE(test04Keys[i], KEY_TYPE), RETRIEVE_SPACE_VALUE);
+        status = dictionary_get(&dict, IONIZE(test04Key, KEY_TYPE), RETRIEVE_SPACE_VALUE);
         out_value = NEUTRALIZE(RETRIEVE_SPACE_VALUE, VALUE_TYPE);
-        if (status.error != err_ok || out_value != test04UpdatedValues[i])
+        if (status.error != err_ok || out_value != test04UpdatedValue)
         {
-            printf("- [FAILED]: Read Status at i: %d with error %d | Read: %d, Expected: %d\n", i, status.error, out_value, test04UpdatedValues[i]);
+            printf("- [FAILED]: Read Status at i: %d with error %d | Read: %d, Expected: %d\n", i, status.error, out_value, test04UpdatedValue);
             clear_dict_n_master_table(&dict, dict_id);
             return 1;
-        }
     }
     puts("- [WORKED]");
 
