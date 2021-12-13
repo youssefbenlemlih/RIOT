@@ -3,7 +3,7 @@
 #ifndef person_t
 struct person
 {
-    int16_t id;
+    char id[14];
     int status;
     double lat;
     double lon;
@@ -53,11 +53,14 @@ static vfs_mount_t _test_vfs_mount = {
 /* provide mtd devices for use within diskio layer of fatfs */
 mtd_dev_t *fatfs_mtd_devs[FF_VOLUMES];
 #endif
-#define KEY_TYPE int16_t
+#define KEY_TYPE char[]
 #define VALUE_TYPE person_t
 #define INDEX_TYPE uint32_t
-ion_byte_t RETRIEVE_SPACE_KEY[sizeof(KEY_TYPE)] = {0};
-ion_byte_t RETRIEVE_SPACE_VALUE[sizeof(VALUE_TYPE)] = {0};
+ion_key_type_t k_type = key_type_char_array;
+ion_key_size_t k_size = 14 * sizeof(char);
+ion_value_size_t v_size = sizeof(VALUE_TYPE);
+// ion_byte_t RETRIEVE_SPACE_KEY[k_size] = {0};
+// ion_byte_t RETRIEVE_SPACE_VALUE[sizeof(VALUE_TYPE)] = {0};
 
 // KEY_TYPE test04Key = -32;
 // VALUE_TYPE test04Value = -100;
@@ -148,10 +151,6 @@ int init_db(void)
     /* Used to bind dictionary specific function to the handler */
     ion_switch_handler(current_type, &handler);
 
-    ion_key_type_t k_type = key_type_numeric_signed;
-    ion_key_size_t k_size = sizeof(KEY_TYPE);
-    ion_value_size_t v_size = sizeof(VALUE_TYPE);
-
     status.error = ion_master_table_create_dictionary(&handler, &dict, k_type, k_size, v_size, DICT_SIZE_GLOB);
     if (status.error != err_ok)
     {
@@ -198,7 +197,7 @@ int save_person2(person_t person)
     VALUE_TYPE in_value = person;
 
     printf("UPDATE test04Keys keys with test04UpdatedValues values ");
-    status = dictionary_update(&dict, IONIZE(person.id, KEY_TYPE), &in_value);
+    status = dictionary_update(&dict, person.id, &in_value);
     if (status.error != err_ok)
     {
         printf("- [FAILED]: Update Status at i: %d with error %d\n", i, status.error);
@@ -213,7 +212,7 @@ int save_person2(person_t person)
 
 person_t find_person_by_id(char *id)
 {
-    person_t p = {.id = 22};
+    person_t p = {.id = {'2'}};
     return p;
 }
 

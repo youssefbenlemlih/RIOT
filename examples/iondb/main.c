@@ -18,7 +18,7 @@ static int _test(int argc, char **argv)
     //     printf("Missing arg\n Useae: save value");
     // }
     printf("%s\n", "Hello world");
-    person_t p = {.id =34, .lat = 3, .lon = 4, .status = 1, .timestamp = 99};
+    person_t p = {.id = {'I','d'}, .lat = 3, .lon = 4, .status = 1, .timestamp = 99};
     int ret = save_person2(p);
     return ret;
 }

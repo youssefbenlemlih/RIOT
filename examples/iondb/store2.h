@@ -1,7 +1,7 @@
 #ifndef person_t
 struct person
 {
-int16_t id ;
+    char id[14];
     int status;
     double lat;
     double lon;
