@@ -99,6 +99,8 @@ static ion_err_t clear_dict_n_master_table(ion_dictionary_t *dict, ion_dictionar
 }
 
 ion_dictionary_t dict = {0};
+ion_dictionary_handler_t handler = {0};
+ion_status_t status = {0};
 
 int init_db(void)
 {
@@ -134,42 +136,8 @@ int init_db(void)
         return -1;
     }
 #endif
-    return 0;
-}
-int close_db(ion_dictionary_id_t dict_id)
-{
-
-    if (clear_dict_n_master_table(&dict, dict_id) != err_ok)
-    {
-        printf("[FAILED]: to close/delete dictionary and master table \n");
-        return 1;
-    }
-
-    /* Clearing Boiler Plate */
-
-#if MODULE_VFS && MODULE_FATFS
-    int ret = vfs_umount(&_test_vfs_mount);
-    if (ret != 0)
-    {
-        printf("[UNMOUNT]: NOT SUCESSFULL\n");
-        return 1;
-    }
-    else
-    {
-        printf("[UNMOUNT]: SUCESSFULL\n");
-        return 0;
-    }
-
-#endif
-}
-int save_person2(person_t person)
-{
-    init_db();
     ion_dictionary_type_t current_type = 0;
     puts("[TEST04]: Update, Read, Delete, Insert, Update, Read of Keys of Test_04_Key and Test_04_Values");
-
-    ion_dictionary_handler_t handler = {0};
-    ion_status_t status = {0};
 
     status.error = ion_init_master_table();
     if (status.error != err_ok)
@@ -193,10 +161,38 @@ int save_person2(person_t person)
         return 1;
     }
 
-    /* Read the dictionary id for later opening usage  */
-    ion_dictionary_id_t dict_id = dict.instance->id;
+    return 0;
+}
+int close_db(void)
+{
 
-    /* Boiler Plate End */
+    if (clear_dict_n_master_table(&dict, dict.instance->id) != err_ok)
+    {
+        printf("[FAILED]: to close/delete dictionary and master table \n");
+        return 1;
+    }
+
+    /* Clearing Boiler Plate */
+
+#if MODULE_VFS && MODULE_FATFS
+    int ret = vfs_umount(&_test_vfs_mount);
+    if (ret != 0)
+    {
+        printf("[UNMOUNT]: NOT SUCESSFULL\n");
+        return 1;
+    }
+    else
+    {
+        printf("[UNMOUNT]: SUCESSFULL\n");
+        return 0;
+    }
+
+#endif
+    return 0;
+}
+int save_person2(person_t person)
+{
+    init_db();
 
     INDEX_TYPE i = 0;
     VALUE_TYPE in_value = 0;
@@ -208,7 +204,7 @@ int save_person2(person_t person)
     if (status.error != err_ok)
     {
         printf("- [FAILED]: Update Status at i: %d with error %d\n", i, status.error);
-        close_db(dict_id);
+        close_db();
         return 1;
     }
     puts("- [WORKED]");
@@ -219,7 +215,7 @@ int save_person2(person_t person)
     if (status.error != err_ok || out_value != test04UpdatedValue)
     {
         printf("- [FAILED]: Read Status at i: %d with error %d | Read: %d, Expected: %d\n", i, status.error, out_value, test04UpdatedValue);
-        close_db(dict_id);
+        close_db();
         return 1;
     }
     puts("- [WORKED]");
@@ -229,7 +225,7 @@ int save_person2(person_t person)
     if (status.error != err_ok)
     {
         printf("- [FAILED]: Delete Status at i: %d with error %d\n", i, status.error);
-        close_db(dict_id);
+        close_db();
         return 1;
     }
     puts("- [WORKED]");
@@ -240,7 +236,7 @@ int save_person2(person_t person)
     if (status.error != err_ok)
     {
         printf("- [FAILED]: Insert Status at i: %d with error %d\n", i, status.error);
-        close_db(dict_id);
+        close_db();
         return 1;
     }
     puts("- [WORKED]");
@@ -251,7 +247,7 @@ int save_person2(person_t person)
     if (status.error != err_ok)
     {
         printf("- [FAILED]: Update Status at i: %d with error %d\n", i, status.error);
-        close_db(dict_id);
+        close_db();
         return 1;
     }
     puts("- [WORKED]");
@@ -262,10 +258,11 @@ int save_person2(person_t person)
     if (status.error != err_ok || out_value != test04UpdatedValue)
     {
         printf("- [FAILED]: Read Status at i: %d with error %d | Read: %d, Expected: %d\n", i, status.error, out_value, test04UpdatedValue);
-        close_db(dict_id);
+        close_db();
         return 1;
     }
     puts("- [WORKED]");
+    close_db();
     return 0;
 }
 
