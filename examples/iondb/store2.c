@@ -53,15 +53,15 @@ static vfs_mount_t _test_vfs_mount = {
 /* provide mtd devices for use within diskio layer of fatfs */
 mtd_dev_t *fatfs_mtd_devs[FF_VOLUMES];
 #endif
-#define KEY_TYPE int32_t
-#define VALUE_TYPE int32_t
+#define KEY_TYPE int16_t
+#define VALUE_TYPE person_t
 #define INDEX_TYPE uint32_t
 ion_byte_t RETRIEVE_SPACE_KEY[sizeof(KEY_TYPE)] = {0};
 ion_byte_t RETRIEVE_SPACE_VALUE[sizeof(VALUE_TYPE)] = {0};
 
-KEY_TYPE test04Key = -32;
-VALUE_TYPE test04Value = -100;
-VALUE_TYPE test04UpdatedValue = 34;
+// KEY_TYPE test04Key = -32;
+// VALUE_TYPE test04Value = -100;
+// VALUE_TYPE test04UpdatedValue = 34;
 
 INDEX_TYPE DICT_SIZE_GLOB = 100;
 static ion_err_t clear_dict_n_master_table(ion_dictionary_t *dict, ion_dictionary_id_t dict_id);
@@ -137,7 +137,6 @@ int init_db(void)
     }
 #endif
     ion_dictionary_type_t current_type = 0;
-    puts("[TEST04]: Update, Read, Delete, Insert, Update, Read of Keys of Test_04_Key and Test_04_Values");
 
     status.error = ion_init_master_table();
     if (status.error != err_ok)
@@ -190,17 +189,16 @@ int close_db(void)
 #endif
     return 0;
 }
+
 int save_person2(person_t person)
 {
     init_db();
 
     INDEX_TYPE i = 0;
-    VALUE_TYPE in_value = 0;
-    VALUE_TYPE out_value = 0;
+    VALUE_TYPE in_value = person;
 
     printf("UPDATE test04Keys keys with test04UpdatedValues values ");
-    in_value = test04UpdatedValue;
-    status = dictionary_update(&dict, IONIZE(test04Key, KEY_TYPE), &in_value);
+    status = dictionary_update(&dict, IONIZE(person.id, KEY_TYPE), &in_value);
     if (status.error != err_ok)
     {
         printf("- [FAILED]: Update Status at i: %d with error %d\n", i, status.error);
@@ -209,84 +207,66 @@ int save_person2(person_t person)
     }
     puts("- [WORKED]");
 
-    printf("READ test04Keys keys and expect test04UpdatedValues ");
-    status = dictionary_get(&dict, IONIZE(test04Key, KEY_TYPE), RETRIEVE_SPACE_VALUE);
-    out_value = NEUTRALIZE(RETRIEVE_SPACE_VALUE, VALUE_TYPE);
-    if (status.error != err_ok || out_value != test04UpdatedValue)
-    {
-        printf("- [FAILED]: Read Status at i: %d with error %d | Read: %d, Expected: %d\n", i, status.error, out_value, test04UpdatedValue);
-        close_db();
-        return 1;
-    }
-    puts("- [WORKED]");
-
-    printf("DELETE test04Keys keys ");
-    status = dictionary_delete(&dict, IONIZE(test04Key, KEY_TYPE));
-    if (status.error != err_ok)
-    {
-        printf("- [FAILED]: Delete Status at i: %d with error %d\n", i, status.error);
-        close_db();
-        return 1;
-    }
-    puts("- [WORKED]");
-
-    printf("INSERT test04Keys keys with test04Values values ");
-    in_value = test04Value;
-    status = dictionary_insert(&dict, IONIZE(test04Key, KEY_TYPE), &in_value);
-    if (status.error != err_ok)
-    {
-        printf("- [FAILED]: Insert Status at i: %d with error %d\n", i, status.error);
-        close_db();
-        return 1;
-    }
-    puts("- [WORKED]");
-
-    printf("UPDATE test04Keys keys with test04UpdatedValues values ");
-    in_value = test04UpdatedValue;
-    status = dictionary_update(&dict, IONIZE(test04Key, KEY_TYPE), &in_value);
-    if (status.error != err_ok)
-    {
-        printf("- [FAILED]: Update Status at i: %d with error %d\n", i, status.error);
-        close_db();
-        return 1;
-    }
-    puts("- [WORKED]");
-
-    printf("READ test04Keys keys and EXPECT test04UpdatedValues ");
-    status = dictionary_get(&dict, IONIZE(test04Key, KEY_TYPE), RETRIEVE_SPACE_VALUE);
-    out_value = NEUTRALIZE(RETRIEVE_SPACE_VALUE, VALUE_TYPE);
-    if (status.error != err_ok || out_value != test04UpdatedValue)
-    {
-        printf("- [FAILED]: Read Status at i: %d with error %d | Read: %d, Expected: %d\n", i, status.error, out_value, test04UpdatedValue);
-        close_db();
-        return 1;
-    }
-    puts("- [WORKED]");
     close_db();
     return 0;
 }
-
-// person_t[] get_all_persons(void)
-// {
-
-//     // VALUE_TYPE out_value = 0;
-//     // for (i = 0; i < TEST_02_KEY_LENGTH; i++)
-//     // {
-//     //     status = dictionary_get(&dict, IONIZE(test02Keys[i], KEY_TYPE), RETRIEVE_SPACE_VALUE);
-//     //     out_value = NEUTRALIZE(RETRIEVE_SPACE_VALUE, VALUE_TYPE);
-//     //     if (status.error != err_ok || out_value != test02Values[i])
-//     //     {
-//     //         printf("- [FAILED]: Read Status at i: %d with error %d | Read: %d, Expected %d\n", i, status.error, out_value, test02Values[i]);
-//     //         clear_dict_n_master_table(&dict, dict_id);
-//     //         return 1;
-//     //     }
-//     // }
-//     // puts("- [WORKED]");
-//     return {};
-// }
 
 person_t find_person_by_id(char *id)
 {
     person_t p = {.id = 22};
     return p;
 }
+
+// printf("READ test04Keys keys and expect test04UpdatedValues ");
+// status = dictionary_get(&dict, IONIZE(test04Key, KEY_TYPE), RETRIEVE_SPACE_VALUE);
+// out_value = NEUTRALIZE(RETRIEVE_SPACE_VALUE, VALUE_TYPE);
+// if (status.error != err_ok || out_value != test04UpdatedValue)
+// {
+//     printf("- [FAILED]: Read Status at i: %d with error %d | Read: %d, Expected: %d\n", i, status.error, out_value, test04UpdatedValue);
+//     close_db();
+//     return 1;
+// }
+// puts("- [WORKED]");
+
+// printf("DELETE test04Keys keys ");
+// status = dictionary_delete(&dict, IONIZE(test04Key, KEY_TYPE));
+// if (status.error != err_ok)
+// {
+//     printf("- [FAILED]: Delete Status at i: %d with error %d\n", i, status.error);
+//     close_db();
+//     return 1;
+// }
+// puts("- [WORKED]");
+
+// printf("INSERT test04Keys keys with test04Values values ");
+// in_value = test04Value;
+// status = dictionary_insert(&dict, IONIZE(test04Key, KEY_TYPE), &in_value);
+// if (status.error != err_ok)
+// {
+//     printf("- [FAILED]: Insert Status at i: %d with error %d\n", i, status.error);
+//     close_db();
+//     return 1;
+// }
+// puts("- [WORKED]");
+
+// printf("UPDATE test04Keys keys with test04UpdatedValues values ");
+// in_value = test04UpdatedValue;
+// status = dictionary_update(&dict, IONIZE(test04Key, KEY_TYPE), &in_value);
+// if (status.error != err_ok)
+// {
+//     printf("- [FAILED]: Update Status at i: %d with error %d\n", i, status.error);
+//     close_db();
+//     return 1;
+// }
+// puts("- [WORKED]");
+
+// printf("READ test04Keys keys and EXPECT test04UpdatedValues ");
+// status = dictionary_get(&dict, IONIZE(test04Key, KEY_TYPE), RETRIEVE_SPACE_VALUE);
+// out_value = NEUTRALIZE(RETRIEVE_SPACE_VALUE, VALUE_TYPE);
+// if (status.error != err_ok || out_value != test04UpdatedValue)
+// {
+//     printf("- [FAILED]: Read Status at i: %d with error %d | Read: %d, Expected: %d\n", i, status.error, out_value, test04UpdatedValue);
+//     close_db();
+//     return 1;
+// }
+// puts("- [WORKED]");
