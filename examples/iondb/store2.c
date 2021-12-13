@@ -212,7 +212,7 @@ int save_person2(person_t person)
 
 person_t find_person_by_id(char *id)
 {
-    person_t p = {.id = {'2'}};
+    person_t p = {.id = {'2', '\0'}};
     return p;
 }
 
