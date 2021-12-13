@@ -11,5 +11,6 @@ typedef struct person person_t;
 #endif
 
 int save_person(person_t person);
+person_t find_person_by_id(char *id);
 int db_init(void);
 int db_close(void);

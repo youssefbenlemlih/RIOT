@@ -44,7 +44,18 @@ static int _add(int argc, char **argv)
     int ret = save_person(p);
     return ret;
 }
-
+static int _find(int argc, char **argv)
+{
+    if (argc < 2)
+    {
+        puts("Usage: find [id]");
+        return 1;
+    }
+    printf("Querying person with id=%s\n",argv[1]);
+    person_t p  = find_person_by_id(argv[1]);
+    printPerson(p);
+    return 1;
+}
 static int _print(int argc, char **argv)
 {
     person_t p = {.id = {'I', 'd', '\0'}, .lat = 3, .lon = 4, .status = 1, .timestamp = 99};
@@ -57,6 +68,7 @@ static const shell_command_t shell_commands[] = {
     {"init", "start the db", _init},
     {"close", "close the db", _close},
     {"add", "add person with given id", _add},
+    {"find", "find a person by id", _find},
     {"print", "print all persons", _print},
     {"hello", "Prints hello world", _hello},
     {NULL, NULL, NULL}};
