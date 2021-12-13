@@ -10,6 +10,6 @@ struct person
 typedef struct person person_t;
 #endif
 
-int save_person2(person_t person);
-
-// int get_all_persons(person_t* persons);
+int save_person(person_t person);
+int db_init(void);
+int db_close(void);

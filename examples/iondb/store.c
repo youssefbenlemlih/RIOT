@@ -105,7 +105,7 @@ ion_dictionary_t dict = {0};
 ion_dictionary_handler_t handler = {0};
 ion_status_t status = {0};
 
-int init_db(void)
+int db_init(void)
 {
     puts("[DB:Bgin mouning sd-card]");
     /* Mount Begin */
@@ -161,7 +161,7 @@ int init_db(void)
 
     return 0;
 }
-int close_db(void)
+int db_close(void)
 {
 
     if (clear_dict_n_master_table(&dict, dict.instance->id) != err_ok)
@@ -189,10 +189,8 @@ int close_db(void)
     return 0;
 }
 
-int save_person2(person_t person)
+int save_person(person_t person)
 {
-    init_db();
-
     INDEX_TYPE i = 0;
     VALUE_TYPE in_value = person;
 
@@ -201,12 +199,9 @@ int save_person2(person_t person)
     if (status.error != err_ok)
     {
         printf("- [FAILED]: Update Status at i: %d with error %d\n", i, status.error);
-        close_db();
         return 1;
     }
     puts("- [WORKED]");
-
-    close_db();
     return 0;
 }
 
