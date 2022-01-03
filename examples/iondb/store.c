@@ -58,9 +58,9 @@ mtd_dev_t *fatfs_mtd_devs[FF_VOLUMES];
 #define KEY_TYPE char[]
 #define VALUE_TYPE person_t
 #define INDEX_TYPE uint32_t
-#define k_type  key_type_char_array
-#define k_size  14 * sizeof(char)
-#define v_size  sizeof(VALUE_TYPE)
+#define k_type key_type_char_array
+#define k_size 14 * sizeof(char)
+#define v_size sizeof(VALUE_TYPE)
 
 // KEY_TYPE test04Key = -32;
 // VALUE_TYPE test04Value = -100;
@@ -208,7 +208,7 @@ void printPerson2(person_t p)
 {
     printf("Person{id=%.14s,lat=%f,lon=%f,status=%d,timestamp=%" PRIu64 "}\n", p.id, p.lat, p.lat, p.status, p.timestamp);
 }
-int find_person_by_id(char *id, person_t * p)
+int find_person_by_id(char *id, person_t *p)
 {
     // person_t* p = {0};
     printf("Finding person by id\n");
@@ -220,7 +220,7 @@ int find_person_by_id(char *id, person_t * p)
         return 1;
     }
     puts("- [WORKED]");
-    
+
     memcpy(p->id, out.id, 14);
     p->lat = out.lat;
     p->lon = out.lon;
@@ -251,16 +251,19 @@ int get_all_persons(person_t *persons, int chunk_number)
         cursor_status = cursor->next(cursor, &ion_record);
     }
     i = 0;
-    while ((cursor_status = cursor->next(cursor, &ion_record)) == cs_cursor_active || cursor_status == cs_cursor_initialized)
+    while (
+        i < chunk_number * CHUNK_SIZE &&
+            ((cursor_status = cursor->next(cursor, &ion_record)) == cs_cursor_active ||
+        cursor_status == cs_cursor_initialized))
     {
-        // localKeyChecksum += NEUTRALIZE(ion_record.key, KEY_TYPE);
-        // localValueChecksum += NEUTRALIZE(ion_record.value, VALUE_TYPE);
         persons[i] = NEUTRALIZE(ion_record.value, VALUE_TYPE);
         i++;
     }
+    bool had_more_left = (cursor_status = cursor->next(cursor, &ion_record)) == cs_cursor_active || cursor_status == cs_cursor_initialized;
     cursor->destroy(&cursor);
     puts("- [WORKED]");
-    return 0;
+
+    return had_more_left ? 1 : 0;
 }
 
 // printf("READ test04Keys keys and expect test04UpdatedValues ");
