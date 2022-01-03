@@ -1,5 +1,6 @@
 #include "ion_master_table.h"
 #include "debug.h"
+#define CHUNK_SIZE 5
 #ifndef person_t
 struct person
 {
@@ -57,16 +58,16 @@ mtd_dev_t *fatfs_mtd_devs[FF_VOLUMES];
 #define KEY_TYPE char[]
 #define VALUE_TYPE person_t
 #define INDEX_TYPE uint32_t
-ion_key_type_t k_type = key_type_char_array;
-ion_key_size_t k_size = 14 * sizeof(char);
-ion_value_size_t v_size = sizeof(VALUE_TYPE);
-// ion_byte_t RETRIEVE_SPACE_KEY[k_size] = {0};
-// ion_byte_t RETRIEVE_SPACE_VALUE[sizeof(VALUE_TYPE)] = {0};
+#define k_type  key_type_char_array
+#define k_size  14 * sizeof(char)
+#define v_size  sizeof(VALUE_TYPE)
 
 // KEY_TYPE test04Key = -32;
 // VALUE_TYPE test04Value = -100;
 // VALUE_TYPE test04UpdatedValue = 34;
 
+ion_byte_t RETRIEVE_SPACE_KEY[k_size] = {0};
+ion_byte_t RETRIEVE_SPACE_VALUE[v_size] = {0};
 INDEX_TYPE DICT_SIZE_GLOB = 100;
 static ion_err_t clear_dict_n_master_table(ion_dictionary_t *dict, ion_dictionary_id_t dict_id);
 static ion_err_t clear_dict_n_master_table(ion_dictionary_t *dict, ion_dictionary_id_t dict_id)
@@ -203,8 +204,6 @@ int save_person(person_t person)
     return 0;
 }
 
-    ion_byte_t RETRIEVE_SPACE_VALUE[sizeof(VALUE_TYPE)] = {0};
-
 void printPerson2(person_t p)
 {
     printf("Person{id=%.14s,lat=%f,lon=%f,status=%d,timestamp=%" PRIu64 "}\n", p.id, p.lat, p.lat, p.status, p.timestamp);
@@ -223,6 +222,40 @@ int find_person_by_id(char *id, personPtr p)
     puts("- [WORKED]");
     // p = &out;
     printPerson2(out);
+    return 0;
+}
+
+int get_all_persons(person_t *persons, int chunk_number)
+{
+    ion_predicate_t predicate = {0};
+    ion_dict_cursor_t *cursor = NULL;
+    ion_cursor_status_t cursor_status = {0};
+    ion_record_t ion_record = {0};
+    ion_record.key = RETRIEVE_SPACE_KEY;
+    ion_record.value = RETRIEVE_SPACE_VALUE;
+
+    dictionary_build_predicate(&predicate, predicate_all_records);
+    if (dictionary_find(&dict, &predicate, &cursor) == err_not_implemented)
+    {
+        puts("[OVER: FIND NOT IMPLEMENTED]");
+        return -1;
+    }
+
+    int i;
+    for (i = 0; i < chunk_number * CHUNK_SIZE; i++)
+    {
+        cursor_status = cursor->next(cursor, &ion_record);
+    }
+    i = 0;
+    while ((cursor_status = cursor->next(cursor, &ion_record)) == cs_cursor_active || cursor_status == cs_cursor_initialized)
+    {
+        // localKeyChecksum += NEUTRALIZE(ion_record.key, KEY_TYPE);
+        // localValueChecksum += NEUTRALIZE(ion_record.value, VALUE_TYPE);
+        persons[i] = NEUTRALIZE(ion_record.value, VALUE_TYPE);
+        i++;
+    }
+    cursor->destroy(&cursor);
+    puts("- [WORKED]");
     return 0;
 }
 

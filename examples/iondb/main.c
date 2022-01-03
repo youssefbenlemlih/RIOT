@@ -3,11 +3,13 @@
 #include <inttypes.h>
 #include "shell.h"
 #include "store.h"
+#define CHUNK_SIZE 5
 
 void printPerson(person_t p)
 {
     printf("Person{id=%.14s,lat=%f,lon=%f,status=%d,timestamp=%" PRIu64 "}\n", p.id, p.lat, p.lat, p.status, p.timestamp);
 }
+
 static int _init(int argc, char **argv)
 {
 
@@ -44,6 +46,19 @@ static int _add(int argc, char **argv)
     int ret = save_person(p);
     return ret;
 }
+static int _findAll(int argc, char **argv)
+{
+    printf("Find all persons\n");
+    person_t persons[CHUNK_SIZE] = {0};
+    int i;
+    for (i = 0; i < CHUNK_SIZE; i++)
+    {
+        printPerson(persons[i]);
+    }
+    int ret = get_all_persons(persons, 0);
+    return ret;
+}
+
 static int _find(int argc, char **argv)
 {
     if (argc < 2)
@@ -71,6 +86,7 @@ static const shell_command_t shell_commands[] = {
     {"close", "close the db", _close},
     {"add", "add person with given id", _add},
     {"find", "find a person by id", _find},
+    {"findAll", "find all persons", _findAll},
     {"print", "print all persons", _print},
     {"hello", "Prints hello world", _hello},
     {NULL, NULL, NULL}};
