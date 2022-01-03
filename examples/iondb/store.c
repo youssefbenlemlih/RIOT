@@ -58,16 +58,16 @@ mtd_dev_t *fatfs_mtd_devs[FF_VOLUMES];
 #define KEY_TYPE char[]
 #define VALUE_TYPE person_t
 #define INDEX_TYPE uint32_t
-#define k_type key_type_char_array
-#define k_size 14 * sizeof(char)
-#define v_size sizeof(VALUE_TYPE)
+ion_key_type_t k_type = key_type_char_array;
+ion_key_size_t k_size = 14 * sizeof(char);
+ion_value_size_t v_size = sizeof(VALUE_TYPE);
 
-// KEY_TYPE test04Key = -32;
-// VALUE_TYPE test04Value = -100;
-// VALUE_TYPE test04UpdatedValue = 34;
+#define K_SIZE  14 * sizeof(char)
+#define V_SIZE  sizeof(VALUE_TYPE)
 
-ion_byte_t RETRIEVE_SPACE_KEY[k_size] = {0};
-ion_byte_t RETRIEVE_SPACE_VALUE[v_size] = {0};
+ion_byte_t RETRIEVE_SPACE_KEY[K_SIZE] = {0};
+ion_byte_t RETRIEVE_SPACE_VALUE[V_SIZE] = {0};
+
 INDEX_TYPE DICT_SIZE_GLOB = 100;
 static ion_err_t clear_dict_n_master_table(ion_dictionary_t *dict, ion_dictionary_id_t dict_id);
 static ion_err_t clear_dict_n_master_table(ion_dictionary_t *dict, ion_dictionary_id_t dict_id)
