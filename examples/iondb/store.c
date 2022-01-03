@@ -208,7 +208,7 @@ void printPerson2(person_t p)
 {
     printf("Person{id=%.14s,lat=%f,lon=%f,status=%d,timestamp=%" PRIu64 "}\n", p.id, p.lat, p.lat, p.status, p.timestamp);
 }
-int find_person_by_id(char *id, personPtr p)
+int find_person_by_id(char *id, person_t * p)
 {
     // person_t* p = {0};
     printf("Finding person by id\n");
@@ -220,8 +220,12 @@ int find_person_by_id(char *id, personPtr p)
         return 1;
     }
     puts("- [WORKED]");
-    // p = &out;
-    printPerson2(out);
+    
+    memcpy(p->id, out.id, 14);
+    p->lat = out.lat;
+    p->lon = out.lon;
+    p->status = out.status;
+    p->timestamp = out.timestamp;
     return 0;
 }
 

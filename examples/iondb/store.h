@@ -11,8 +11,6 @@ typedef struct person person_t;
 typedef struct person *personPtr;
 #endif
 int save_person(person_t person);
-
-int find_person_by_id(char *id, personPtr out);
 /**
  * Return 0 if succesfully returned all the persons
  * Returns -1 if an error has occured
@@ -21,5 +19,6 @@ int find_person_by_id(char *id, personPtr out);
 */
 int get_all_persons(person_t *persons, int chunk_number);
 
+int find_person_by_id(char *id, person_t* out);
 int db_init(void);
 int db_close(void);

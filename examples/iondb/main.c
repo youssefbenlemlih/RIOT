@@ -67,9 +67,16 @@ static int _find(int argc, char **argv)
         return 1;
     }
     printf("Querying person with id=%s\n", argv[1]);
-    personPtr p = NULL;
-    int ret = find_person_by_id(argv[1], p);
-    // printPerson(*p);
+    person_t p = {0};
+    int ret = find_person_by_id(argv[1], &p);
+    if (ret != 0)
+    {
+        printf("No person found with id=%s\n", argv[1]);
+    }
+    else
+    {
+        printPerson(p);
+    }
     return ret;
 }
 
